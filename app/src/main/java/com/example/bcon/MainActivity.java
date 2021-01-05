@@ -145,6 +145,10 @@ public class MainActivity extends AppCompatActivity  {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
+        //String temp="[127.17473,37.42309]"
+       // mWebView.loadUrl("javascript:pointMaker(" + temp + ")");
+
         AndroidLocationProvider.requestLocationEnabling(MainActivity.this);
 
     }
