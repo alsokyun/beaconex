@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <style type="text/css" >
+    #ctl1{
+        position:absolute;
+        z-index:100;
+        background-color:#111;
+        top: 0;
+        height:100px;
+        width:300px;
+        left: 50%;
+        opacity: 0.8;
+        transform: translateX(-50%);
+        padding: 10px;
+        text-align: center;
+        border-radius: 15px;
+        color: #fff;
+        /*transition: height 1.5s;*/
+    }
+    #ctlBtn{
+        position:absolute;
+        z-index:101;
+        top: 0;
+        right: 0;
+    }
+    </style>
+
+    <script type="text/javascript" src="js/jquery.js"></script>
+    <script text="javascript" src="lib/timingsrc-v1.js"></script>
+    <script text="javascript" src="lib/mediasync.js"></script>
+    <script text="javascript" src="lib/socket.io.js"></script>
+
+    <script type="text/javascript">
+
+var to;
+var sync1;
+
+//플레이어관련
+var player;
+//var videoAry = ["file:///android_asset/left.mp4", "file:///android_asset/yskim.mp4"];
+var videoAry = ["content://com.drcts.bts.file/left.mp4", "content://com.drcts.bts.file/yskim.mp4"];
+var video_index = 0;
+
+//웹소켓
+var socket;
+
+//파일경로
+var file_path = "";
+
+
+
+var _setPath = function(path){
+    //file_path = "file:/" +  path + "/bts/";
+    //file_path = "content://com.drcts.bts.file/";
+    console.log("_setPath file_path - " + file_path);
+
+    initPage();
+}
+
+var run = function (timingProvider) {
+
+    // timing object
+    to = new TIMINGSRC.TimingObject({range:[0,10000000]});
+    //to = new TIMINGSRC.TimingObject({provider:timingProvider, range:[0,100]});
+
+    // set up refresh of timingobject position
+    to.on("timeupdate", function () {
+        document.getElementById("position").innerHTML = to.query().position.toFixed(2);
+    });
+
+    sync1 = new TIMINGSRC.MediaSync(document.getElementById('player1'),to);
+
+
+
+    // set up button click handlers
+    var buttonsElem = document.getElementById("buttons");
+    buttonsElem.onclick = function (e) {
+        var elem, evt = e ? e:event;
+        if (evt.srcElement)
+            elem = evt.srcElement;
+        else if (evt.target)
+            elem = evt.target;
+
+        if (elem.id === "pause") {
+            to.update({velocity:0.0});
+        }
+        else if (elem.id === "tostart") {
+            to.update({position:0.0});
+        }
+        else if (elem.id === "skipforward") {
+            to.update({position:0.0});
+        }
+        else if (elem.id === "skipbackward") {
+            to.update({position: to.query().position - 5});
+            //var timingObject1 = new TIMINGSRC.TimingObject({position:50 });
+            //TIMINGSRC.MediaSync(document.getElementById('player1'),timingObject1,null);
+        }
+        else if (elem.id === "forward") {
+            var v = to.query();
+            if (v.position === 100 && v.velocity === 0) {
+                to.update({position:0.0, velocity: 1.0});
+            }
+            else
+                to.update({velocity:1.0});
+        }
+        else if (elem.id === "toend") {
+            to.update({position:100.0});
+        }
+    }
+};
+
+
+
+
+var initServer = function(){
+
+    // socket.io 서버에 접속한다
+    socket = io('http://192.168.0.4:3000');
+
+    // 서버로 자신의 정보를 전송한다.
+    socket.emit("login", {
+        // name: "ungmo2",
+        name: "alsokyun",
+        userid: "alsokyun@gmail.com"
+    });
+
+    // 서버로부터의 메시지가 수신되면
+    socket.on("login", function(data) {
+        $("#chatLogs").append("<div><strong>" + data + "</strong> has joined</div>");
+    });
+
+    // 서버로부터의 메시지가 수신되면
+    socket.on("chat", function(data) {
+        var t = 0;
+        if(data.msg=="Play")
+        {
+            $("#forward").trigger("click");
+        }
+        else if(data.msg=="Reset")
+        {
+            $("#tostart").trigger("click");
+        }
+        else if((new String(data.msg)).startsWith("Next"))
+        {
+            var msg = new String(data.msg);
+            var idx= msg.substring(msg.indexOf(":")+1);
+            video_index=idx;
+
+            player.pause();
+            player.src = file_path + videoAry[video_index];
+            player.load();
+            to.update({position:0.0});
+        }
+        else{
+            try{
+                t = parseFloat(data.msg);
+            }catch(e){}
+            to.update({position: t });
+        }
+    });
+
+    // Send 버튼이 클릭되면
+    $("form").submit(function(e) {
+        e.preventDefault();
+        var $msgForm = $("#msgForm");
+
+        // 서버로 메시지를 전송한다.
+        socket.emit("chat", { msg: $msgForm.val() });
+        $msgForm.val("");
+    });
+
+}
+
+
+
+/*
+    플레이어 스타트
+*/
+var initPage = function(){
+    //미디어시크 실행
+    run();
+
+    //플레이어객체
+    player = document.getElementById("player1");
+    player.src = file_path + videoAry[video_index];
+
+    //플레이종료이벤트핸들러
+    player.addEventListener('ended', function(){
+        video_index++;
+        console.log("page2 ended............."+video_index);
+        if (video_index > videoAry.length-1){
+            video_index = 0;
+        }
+    //	player.pause();
+        player.src = file_path + videoAry[video_index];
+
+        player.load();
+        to.update({position:0.0});
+
+    },false);
+
+    //플레이어 start
+    to.update({velocity: 1.0});
+
+
+
+    //소켓구동
+    initServer();
+
+
+    //플레이어 스타트
+    startPlayer();
+
+}
+
+
+
+/*
+    플레이어 스타트
+*/
+var startPlayer = function(){
+    var	playedPromise=player.play();
+    if (playedPromise) {
+        playedPromise.catch((e) => {
+             if (e.name === 'NotAllowedError' || e.name === 'NotSupportedError') {
+                   console.log("playedPromise.catch" + e);
+              }
+         }).then(() => {
+
+            var fullPromise = player.requestFullscreen();
+            if(fullPromise){
+                fullPromise.catch((e) => {
+                   console.log("fullPromise.catch" + e);
+                }).then(() => {
+                    console.log("player.requestFullscreen ...");
+                });
+            }
+         });
+     }
+
+}
+
+
+
+$(document).ready(function() {
+
+    $("#ctlBtn img").click(function(){
+        //up버튼
+        if($(this).prop("src").endsWith("up.png") ){
+            $(this).prop("src","img/down.png");
+            $("#ctl1").hide(1000);
+        }
+        //down버튼
+        else{
+            $(this).prop("src","img/up.png");
+            $("#ctl1").show(1000);
+        }
+    });
+
+    $("#refresh").click(function(){
+        document.location.reload();
+    });
+
+});
+
+
+
+
+
+</script>
+
+
+</head>
+
+
+<body style="margin-left:0; background-color:#000;">
+
+<div id="ctlBtn">
+    <img src="img/up.png"/>
+</div>
+<div id="ctl1" >
+    <p>MediaSync Clinet   <span id='position'></span> </p>
+    <div id="demo" style="height:60px">
+        <p id='buttons'>
+            <button id='tostart'>Reset</button>
+            <button id='forward'>Play</button>
+            <button id='refresh'>Refresh</button>
+        </p>
+
+    </div>
+</div>
+
+<div id="ctl" style="position:absolute; z-index: 10; top: 50%; left: 50%; transform:translateY(-50%) translateX(-50%);width:100%;height:100%;">
+    <video id="player1" src="" style="width:100%;height:100%;"  muted   poster="img/black.png">
+    </video>
+</div>
+</body>
+</html>

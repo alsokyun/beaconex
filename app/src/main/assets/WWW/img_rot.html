@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <link rel="stylesheet" type="text/css"  href="lib/ol/css/ol.css">
+    <style type="text/css" >
+        #map {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+
+    <script type="text/javascript" src="js/jquery.js"></script>
+    <script text="javascript" src="lib/ol/ol.js"></script>
+
+    <script text="javascript" src="lib/proj4.js"></script>
+
+
+
+</head>
+
+
+<body>
+
+    <div id="map" class="map"></div>
+
+
+<script type="text/javascript" >
+let kmlOverlay = function() {
+
+    function loadUrl ( url,
+                    opt_options  // attributions (defaults to undefined), crossOrigin (defaults to 'anonymous')
+    ) {
+
+        var options = opt_options || {};
+        var crossOrigin = options.crossOrigin === undefined ? 'anonymous' : options.crossOrigin;
+
+        var group = new ol.layer.Group();
+
+        function addLayer(name, extent, url, rotation) {  // function to maintain context during async img load
+
+            var imageLayer = new ol.layer.Image({
+                title: name
+            });
+            group.getLayers().push(imageLayer);
+
+            var imageSize = [];
+            var img = document.createElement('img');
+            img.onload = function() {
+                imageSize[0] = img.width;
+                imageSize[1] = img.height;
+                imageLayer.setSource(
+                    source (
+                        extent,
+                        url,
+                        rotation,
+                        imageSize,
+                        { attributions: options.attributions, crossOrigin: crossOrigin }
+                    )
+                );
+            };
+            img.crossOrigin = crossOrigin;
+            img.src = url;
+
+        }
+
+        var last = url.lastIndexOf('/') + 1;
+        path = url.slice(0, last);
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url);
+        xhr.onload = function() {
+
+            var parser = new DOMParser();
+            var xmlDoc = parser.parseFromString(xhr.responseText,'text/xml');
+
+            var elements = xmlDoc.getElementsByTagName('GroundOverlay');
+
+            for (var i=0; i<elements.length; i++) {
+
+                var name;
+                if (elements[i].getElementsByTagName('rotation').length > 0) {
+                    name = elements[i].getElementsByTagName('name')[0].childNodes[0].nodeValue;
+                }
+                var href = elements[i].getElementsByTagName('href')[0].childNodes[0].nodeValue;
+                if (href.indexOf('http:') != 0 && href.indexOf('https:') != 0) {
+                    href = path + href;
+                }
+                var north = Number(elements[i].getElementsByTagName('north')[0].childNodes[0].nodeValue);
+                var south = Number(elements[i].getElementsByTagName('south')[0].childNodes[0].nodeValue);
+                var east = Number(elements[i].getElementsByTagName('east')[0].childNodes[0].nodeValue);
+                var west = Number(elements[i].getElementsByTagName('west')[0].childNodes[0].nodeValue);
+                var rotation = 0;
+                if (elements[i].getElementsByTagName('rotation').length > 0) {
+                    rotation = Number(elements[i].getElementsByTagName('rotation')[0].childNodes[0].nodeValue);
+                }
+
+                addLayer(name, [west, south, east, north], href, rotation);
+
+            }
+
+        }
+        xhr.send();
+        return group;
+
+    }
+
+    function source ( kmlExtent, // KMLs specify the extent the unrotated image would occupy
+                    url,
+                    rotation,
+                    imageSize,
+                    opt_options  // attributions, crossOrigin (default to undefined)
+    ) {
+
+        var options = opt_options || {};
+
+        // calculate latitude of true scale of equidistant cylindrical projection based on pixels per degree on each axis
+
+        proj4.defs('EPSG:' + url, '+proj=eqc +lat_ts=' +
+                                (Math.acos((ol.extent.getHeight(kmlExtent)/imageSize[1])
+                                            /(ol.extent.getWidth(kmlExtent)/imageSize[0]))*180/Math.PI) +
+                                ' +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs');
+
+        if (ol.proj.proj4 && ol.proj.proj4.register) { ol.proj.proj4.register(proj4); } // if OL5 register proj4
+
+        // convert the extents to source projection coordinates
+
+        var projection = ol.proj.get('EPSG:' + url);
+        var projExtent = ol.proj.transformExtent(kmlExtent, 'EPSG:4326', projection);
+
+        var angle = -rotation * Math.PI/180;
+
+        function rotateTransform(coordinate) {
+            var point = new ol.geom.Point(coordinate);
+            point.rotate(angle, ol.extent.getCenter(projExtent));
+            return point.getCoordinates();
+        }
+
+        function normalTransform(coordinate) {
+            var point = new ol.geom.Point(coordinate);
+            point.rotate(-angle, ol.extent.getCenter(projExtent));
+            return point.getCoordinates();
+        }
+
+        var rotatedProjection = new ol.proj.Projection({
+            code: 'EPSG:' + url + ':rotation:' + rotation,
+            units: 'm',
+            extent: projExtent
+        });
+        ol.proj.addProjection(rotatedProjection);
+
+        ol.proj.addCoordinateTransforms('EPSG:4326', rotatedProjection,
+            function(coordinate) {
+                return rotateTransform(ol.proj.transform(coordinate, 'EPSG:4326', projection));
+            },
+            function(coordinate) {
+                return ol.proj.transform(normalTransform(coordinate), projection, 'EPSG:4326');
+            }
+        );
+
+        ol.proj.addCoordinateTransforms('EPSG:3857', rotatedProjection,
+            function(coordinate) {
+                return rotateTransform(ol.proj.transform(coordinate, 'EPSG:3857', projection));
+            },
+            function(coordinate) {
+                return ol.proj.transform(normalTransform(coordinate), projection, 'EPSG:3857');
+            }
+        );
+
+        return new ol.source.ImageStatic({
+            projection: rotatedProjection,
+            url: url,
+            imageExtent: projExtent,
+            attributions: options.attributions,
+            crossOrigin: options.crossOrigin
+        });
+
+    }
+
+    return {
+    "loadUrl" : loadUrl,
+    "source"  : source
+    }
+
+} ();
+
+
+
+let tileLayer;
+let map;
+let extent = ol.extent.createEmpty();
+let group;
+
+
+
+$(document).ready(function() {
+
+    debugger;
+
+    let parser = new ol.format.WMTSCapabilities();
+	//브이월드 WMTS 타일맵
+	fetch("http://localhost:8088/WMTSCapabilities.xml").then(function (response) {
+			return response.text();
+	}).then(function (text) {
+		var result = parser.read(text);
+		
+		var options = ol.source.WMTS.optionsFromCapabilities(result, {
+			layer: 'Base',
+			matrixSet: 'EPSG:3857',
+		});
+
+
+		//맵초기화
+		map = new ol.Map({
+			layers: [
+ 				new ol.layer.Tile({
+					opacity: 1,
+					source: new ol.source.WMTS(options)
+				})
+ 			],
+			target: document.getElementById('map'),
+			view: new ol.View({
+			center: ol.proj.fromLonLat([127.1748, 37.4230]), 
+			zoom: 21,
+			}),
+		})
+	
+
+
+
+
+
+/*         group = kmlOverlay.loadUrl(
+            'https://raw.githubusercontent.com/ReneNyffenegger/about-GoogleEarth/master/kml/GroundOverlay.kml'
+        );
+        group.getLayers().once('add', function(evt) {
+            evt.element.once('change:source', function() {
+                if (evt.element.getSource && evt.element.getSource().getProjection) {
+                    var imageProj = evt.element.getSource().getProjection();
+                    ol.extent.extend(extent, ol.proj.transformExtent(imageProj.getExtent(), imageProj, map.getView().getProjection()));
+                    map.getView().fit(extent, { constrainResolution: false });
+                }
+            });
+        });
+
+        group.setOpacity(0.8);
+        map.addLayer(group);
+ */
+    });
+
+
+
+/*     map = new ol.Map({
+        layers: [new ol.layer.Tile({
+        source: new ol.source.XYZ({
+                attributions: [
+                    'Powered by Esri',
+                    'Source: Esri, DigitalGlobe, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, and the GIS User Community'
+                ],
+                //attributionsCollapsible: false,
+                url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                maxZoom: 23
+            })
+        })],
+        target: document.getElementById('map'),
+        logo: false,
+        view: new ol.View({
+            center:[127, 37],
+            zoom: 10
+        })
+    });
+ */
+
+    
+});
+</script>
+
+</body>
+</html>
