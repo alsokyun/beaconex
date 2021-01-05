@@ -219,7 +219,7 @@ let initMap = function(){
 
 // 포인트 표시
 let pointMaker2 = function(cord){
-    console.log("pointMaker .. " + cord);
+    console.log("pointMaker2 .. " + cord);
 
 	// convert the generated point to a OpenLayers feature
 	let marker = new ol.Feature({
@@ -244,16 +244,29 @@ let fn_layer_Load = function(){
 	gfn_loadFile("roads-seoul.geojson", function(text){
 		_json = JSON.parse(text);
 
+   var style = new ol.style.Style({
+                fill: new ol.style.Fill({
+                    color: 'rgba(255, 0, 0, 1)'
+                }),
+                stroke: new ol.style.Stroke({
+                    width: 2,
+                    color: 'rgba(255, 0, 0, 1)'
+                }),
+                image: new ol.style.Circle({
+                    fill: new ol.style.Fill({
+                        color: 'rgba(255, 0, 0, 1)'
+                    }),
+                    stroke: new ol.style.Stroke({
+                        width: 1,
+                        color: 'rgba(255, 0, 0, 1)'
+                    }),
+                    radius: 7
+                }),
+            });
+
 		vectorLayer = new ol.layer.Vector({
 		  source: source1,
-		  style: new Style({
-              fill: new Fill({
-                color: 'red'
-              }),
-              stroke: new Stroke({
-                color: 'white'
-              })
-            })
+         style: style
 		});
 
 		let features = GeoJSON.readFeatures(_json);
