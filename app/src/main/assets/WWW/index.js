@@ -197,7 +197,28 @@ let initMap = function(){
 
 
 // 포인트 표시
-let pointMaker = function(cord){
+ let pointMaker = function(cord){
+     console.log("pointMaker .. " + cord);
+
+ 	// convert the generated point to a OpenLayers feature
+ 	let marker = new ol.Feature({
+ 		geometry: new ol.geom.Point(cord),
+ 	  });
+ 	marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
+
+ 	//source.clear();
+ 	try{
+ 	 	source1.removeFeature(pre_marker);
+ 	}catch(e){}
+
+ 	source1.addFeature(marker);
+ 	pre_marker = marker;
+ 	//alert(1);
+
+ }
+
+// 포인트 표시
+let pointMaker2 = function(cord){
     console.log("pointMaker .. " + cord);
 
 	// convert the generated point to a OpenLayers feature
@@ -206,18 +227,11 @@ let pointMaker = function(cord){
 	  });
 	marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
 
-	//source.clear();
-	try{
-	 //	source1.removeFeature(pre_marker);
-	}catch(e){}
-
 	source1.addFeature(marker);
 	pre_marker = marker;
 	//alert(1);
 
 }
-
-
 
 
 
@@ -232,6 +246,14 @@ let fn_layer_Load = function(){
 
 		vectorLayer = new ol.layer.Vector({
 		  source: source1,
+		  style: new Style({
+              fill: new Fill({
+                color: 'red'
+              }),
+              stroke: new Stroke({
+                color: 'white'
+              })
+            })
 		});
 
 		let features = GeoJSON.readFeatures(_json);

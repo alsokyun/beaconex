@@ -146,14 +146,6 @@ public class MainActivity extends AppCompatActivity  {
             e.printStackTrace();
         }
 
-        String temp="[127.17473,37.42309]";  //10
-        mWebView.loadUrl("javascript:pointMaker(" + temp + ")");
-         temp="[127.17492,37.42304]";  //9
-        mWebView.loadUrl("javascript:pointMaker(" + temp + ")");
-         temp="[127.17492,37.42311]";  //7
-        mWebView.loadUrl("javascript:pointMaker(" + temp + ")");
-         temp="[127.17474,37.42303]";  //1604
-        mWebView.loadUrl("javascript:pointMaker(" + temp + ")");
 
         AndroidLocationProvider.requestLocationEnabling(MainActivity.this);
 
@@ -206,6 +198,15 @@ public class MainActivity extends AppCompatActivity  {
             //requestBluetooth();
         }
         BluetoothClient.startScanning();
+
+        String temp="[127.17473,37.42309]";  //10
+        mWebView.loadUrl("javascript:pointMaker2(" + temp + ")");
+        temp="[127.17492,37.42304]";  //9
+        mWebView.loadUrl("javascript:pointMaker2(" + temp + ")");
+        temp="[127.17492,37.42311]";  //7
+        mWebView.loadUrl("javascript:pointMaker2(" + temp + ")");
+        temp="[127.17474,37.42303]";  //1604
+        mWebView.loadUrl("javascript:pointMaker2(" + temp + ")");
 
 
     }
