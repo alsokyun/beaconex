@@ -208,8 +208,6 @@ public class MainActivity extends AppCompatActivity  {
         temp="[127.17474,37.42303]";  //1604
         mWebView.loadUrl("javascript:pointMaker2(" + temp + ")");
 
-        temp="[127.17474,37.42302]";  //ghost
-        mWebView.loadUrl("javascript:pointMaker2(" + temp + ")");
     }
 
 

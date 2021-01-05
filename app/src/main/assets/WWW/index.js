@@ -228,7 +228,7 @@ let pointMaker2 = function(cord){
 	marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
 
 	source1.addFeature(marker);
-	pre_marker = marker;
+	//pre_marker = marker;
 	//alert(1);
 
 }
