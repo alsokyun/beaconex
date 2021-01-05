@@ -208,7 +208,7 @@ let pointMaker = function(cord){
 
 	//source.clear();
 	try{
-	 	source1.removeFeature(pre_marker);
+	 //	source1.removeFeature(pre_marker);
 	}catch(e){}
 
 	source1.addFeature(marker);
