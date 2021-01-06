@@ -35,7 +35,7 @@ public class BeaconManager {
 
     private Beacon closestBeacon;
 
-    private static final WindowFilter meanFilter = new MeanFilter(15, TimeUnit.SECONDS);
+    private static final WindowFilter meanFilter = new MeanFilter(5, TimeUnit.SECONDS);
 
     private BeaconManager() {
 
