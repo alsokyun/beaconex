@@ -140,6 +140,7 @@ public class MainActivity extends AppCompatActivity  {
         mWebView.loadUrl("file:///android_asset/WWW/index.html");
 
 
+
         try {
             Thread.sleep(2000);
         } catch (InterruptedException e) {
@@ -198,6 +199,8 @@ public class MainActivity extends AppCompatActivity  {
             //requestBluetooth();
         }
         BluetoothClient.startScanning();
+
+
 
         String temp="[127.17473,37.42309]";  //10
         mWebView.loadUrl("javascript:pointMaker2(" + temp + ")");
