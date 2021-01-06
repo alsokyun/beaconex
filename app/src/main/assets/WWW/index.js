@@ -204,12 +204,27 @@ let initMap = function(){
  	let marker = new ol.Feature({
  		geometry: new ol.geom.Point(cord),
  	  });
+
+
+var iconBlue = new ol.style.Style({
+      image: new ol.style.Icon({
+        anchor: [10, 10],
+        anchorXUnits: 'pixels',
+        anchorYUnits: 'pixels',
+        opacity: 1,
+        src: './img/user_icon.png'
+
+      })
+    });
+    marker.setStyle(iconBlue);
+
  	marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
 
  	//source.clear();
  	try{
  	 	source1.removeFeature(pre_marker);
  	}catch(e){}
+
 
  	source1.addFeature(marker);
  	pre_marker = marker;
@@ -243,7 +258,7 @@ let pointMaker2 = function(cord){
         anchorXUnits: 'pixels',
         anchorYUnits: 'pixels',
         opacity: 1,
-        src: './img/beacon-icon.png'
+        src: './img/beacon_icon.png'
 
       })
     });
