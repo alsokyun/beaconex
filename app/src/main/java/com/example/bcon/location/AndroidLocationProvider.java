@@ -1,5 +1,6 @@
 package com.example.bcon.location;
 
+import com.example.bcon.MainActivity;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.CommonStatusCodes;
 import com.google.android.gms.common.api.ResolvableApiException;
@@ -269,6 +270,7 @@ public final class AndroidLocationProvider implements LocationProvider {
         Log.d(TAG, "Requesting location enabling");
         Intent locationSettings = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
         activity.startActivity(locationSettings);
+
     }
 
     public static Location convertLocation(android.location.Location androidLocation) {

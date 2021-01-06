@@ -36,7 +36,7 @@ let map;
  */
 //로드 레이어
 let source1 = new ol.source.Vector();
-let vectorLayer;
+let vectorLayer1;
 
 //마커포지션 레이어
 let source2 = new ol.source.Vector();
@@ -144,8 +144,8 @@ let initMap = function(){
  			],
 			target: document.getElementById('map'),
 			view: new ol.View({
-			center: ol.proj.fromLonLat([127.1748, 37.4230]), //디알씨티에스
-			zoom: 22,
+			center: ol.proj.fromLonLat([127.1748, 37.42305]), //디알씨티에스
+			zoom: 21,
 			}),
 		})
 
@@ -171,18 +171,6 @@ let initMap = function(){
 		fn_layer_Img();
 
 
-		// moveMaker([127.17487910037713,37.42310490165161]);
-        //		moveMaker([127.17487106339897,37.42309890571249	]);
-        //		moveMaker([127.17488319176584,37.4230935143468  ]);
-        //		moveMaker([127.17481258966491,37.42306528757972 ]);
-        //		moveMaker([127.1748108776806,37.423063707964474 ]);
-        //		moveMaker([127.17486723854375,37.42309845412717 ]);
-        //		moveMaker([127.17487542284822,37.42309697143114 ]);
-        //		moveMaker([127.17487553259048,37.423097089788634]);
-        //		moveMaker([127.17487375480032,37.423097952174125]);
-        //		moveMaker([127.1748646811337,37.42309552760887  ]);
-        //		moveMaker([127.17486219937012,37.423097824455766]);
-        //		moveMaker([127.17486386209274,37.42309944709116 ]);
 
 		// moveMaker([127.17474, 37.42303]); //좌하
 		// moveMaker([127.17473, 37.42309]); //좌상
@@ -208,13 +196,27 @@ let pointMaker = function(cord){
 
 	//source.clear();
 	try{
-	 	source1.removeFeature(pre_marker);
+	 	source2.removeFeature(pre_marker);
 	}catch(e){}
 
-	source1.addFeature(marker);
+	source2.addFeature(marker);
 	pre_marker = marker;
-	//alert(1);
 
+}
+
+
+// 격자포인트 표시
+let pointLatis = function(cord){
+	// convert the generated point to a OpenLayers feature
+	let marker = new ol.Feature({
+		geometry: new ol.geom.Point(cord),
+	  });
+	marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
+
+	source1.addFeature(marker);
+	try{
+        map.addLayer(vectorLayer1);
+	}catch(e){}
 }
 
 
@@ -230,7 +232,7 @@ let fn_layer_Load = function(){
 	gfn_loadFile("roads-seoul.geojson", function(text){
 		_json = JSON.parse(text);
 
-		vectorLayer = new ol.layer.Vector({
+		vectorLayer1 = new ol.layer.Vector({
 		  source: source1,
 		});
 
@@ -239,8 +241,9 @@ let fn_layer_Load = function(){
 
 		street.getGeometry().transform('EPSG:4326', 'EPSG:3857');
 		source1.addFeature(street);
-	
-		map.addLayer(vectorLayer);
+
+        vectorLayer1.setZIndex(3);
+		map.addLayer(vectorLayer1);
 
 	});
 
@@ -254,6 +257,21 @@ let fn_layer_Pos = function(){
 	//포지션레이어
 	vectorLayer2 = new ol.layer.Vector({
 	  source: source2,
+      style: new ol.style.Style({
+        fill: new ol.style.Fill({
+            color: '#ff33cc'
+        }),
+        stroke: new ol.style.Stroke({
+            color: '#66ff66',
+            width: 3
+        }),
+        image: new ol.style.Circle({
+            radius: 7,
+            fill: new ol.style.Fill({
+                color: "#ff0000",
+            })
+        }),
+      }),
 	});
 
     map.addLayer(vectorLayer2);
@@ -299,7 +317,8 @@ $(document).ready(function() {
 	//지도초기화
 	initMap();
 
-
+    //지도회전
+    rot_Ang(90);
 	
 	
 	/**
@@ -310,10 +329,9 @@ $(document).ready(function() {
 
 	//라인편집해제
 	$("#btn3").click(function(){
-		map.removeInteraction(draw);
-		map.removeInteraction(snap);
-		
+
 		try{
+			map.removeLayer(vectorLayer1);
 			map.removeLayer(drawVectorLayer);
 		}catch(e){}
 	});
@@ -323,17 +341,32 @@ $(document).ready(function() {
 
 	//저장된 Path 로딩
 	$("#btn4").click(function(){
-		debugger;
-		let drawVector_string = localStorage.getItem("drawVector_string");
-		let drawVector_Ary = JSON.parse(drawVector_string);
 
-		$.each(drawVector_Ary, function(idx, val){
-			drawVectorSource.addFeatures(GeoJSON.readFeatures(val));
-		});
+        gfn_loadFile("dr_path.geojson", function(text){
+            let drawVector_Ary = JSON.parse(text);;
 
-		try{
-			map.addLayer(drawVectorLayer);
-		}catch(e){}
+            //라인스트링 표시
+            $.each(drawVector_Ary, function(idx, val){
+                let ft = GeoJSON.readFeatures(val);
+                ft[0].getGeometry().transform('EPSG:4326','EPSG:3857');//좌표계로 변환
+                drawVectorSource.addFeatures(ft);
+            });
+
+            try{
+                drawVectorLayer.setZIndex(2);
+                map.addLayer(drawVectorLayer);
+            }catch(e){}
+
+            //resolved 포인트확인
+            $.each(drawVector_Ary, function(idx, val){
+                let ft = GeoJSON.readFeatures(val);
+                $.each(ft[0].getGeometry().getCoordinates(), function(idx, val){
+                    pointLatis(val);
+                });
+            });
+
+        });
+
 	});
 
 

@@ -83,7 +83,7 @@ public class MainActivity extends AppCompatActivity  {
         /**
          * 웹뷰 초기화
          */
-        // 타이머후처리 핸들러 인스턴스
+        // 비콘위치처리 핸들러 인스턴스
         if(messagehandler!=null) {
             messagehandler = null;
         }
@@ -140,12 +140,8 @@ public class MainActivity extends AppCompatActivity  {
         mWebView.loadUrl("file:///android_asset/WWW/index.html");
 
 
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        AndroidLocationProvider.requestLocationEnabling(MainActivity.this);
+
+        //AndroidLocationProvider.requestLocationEnabling(MainActivity.this);
 
     }
 
@@ -182,21 +178,25 @@ public class MainActivity extends AppCompatActivity  {
     protected void onResume() {
         super.onResume();
 
+        // observe bluetooth
+        if (!BluetoothClient.isBluetoothEnabled()) {
+            BluetoothClient.requestBluetoothEnabling(MainActivity.this);
+        }
+        BluetoothClient.startScanning();
+
+
+
+
         // observe location
         if (!AndroidLocationProvider.hasLocationPermission(this)) {
             AndroidLocationProvider.requestLocationPermission(this);
         } else if (!AndroidLocationProvider.isLocationEnabled(this)) {
-            //requestLocationServices();
+            AndroidLocationProvider.requestLocationEnabling(MainActivity.this);
         }
-        AndroidLocationProvider.startRequestingLocationUpdates();
-        AndroidLocationProvider.requestLastKnownLocation();
-
-        // observe bluetooth
-        if (!BluetoothClient.isBluetoothEnabled()) {
-            //requestBluetooth();
+        else{
+            AndroidLocationProvider.startRequestingLocationUpdates();
+            AndroidLocationProvider.requestLastKnownLocation();
         }
-        BluetoothClient.startScanning();
-
 
     }
 
@@ -227,7 +227,7 @@ public class MainActivity extends AppCompatActivity  {
     /************************************************************
      * 일반
      */
-    // 타이머후처리 핸들러
+    // 이벤트 핸들러
     public class Messagehandler extends Handler {
         @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
         @Override
@@ -282,12 +282,13 @@ public class MainActivity extends AppCompatActivity  {
             @Override
             public void onLocationUpdated(LocationProvider locationProvider, Location location) {
                 if (locationProvider == IndoorPositioning.getInstance()) {
-                    System.out.print("yskim lo >>"+location.getLongitude()+"\n");
+                    //System.out.print("yskim lo >>"+location.getLongitude()+"\n");
+                    Log.d("main","yskim lo >>"+location.getLongitude());
 
                     Message msg = messagehandler.obtainMessage();
                     msg.what = 0;
                     msg.obj = "[" + location.getLongitude() + "," + location.getLatitude() + "]";
-                    messagehandler.sendMessage(msg);//스케줄타이머작업 타입
+                    messagehandler.sendMessage(msg);
 
                 }
             }
