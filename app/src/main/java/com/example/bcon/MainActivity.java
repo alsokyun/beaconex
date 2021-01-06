@@ -32,6 +32,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import static com.nexenio.bleindoorpositioning.IndoorPositioning.getUsableBeacons;
+
 
 public class MainActivity extends AppCompatActivity  {
 
@@ -300,15 +302,16 @@ public class MainActivity extends AppCompatActivity  {
             @Override
             public void onLocationUpdated(LocationProvider locationProvider, Location location) {
                 if (locationProvider == IndoorPositioning.getInstance()) {
-                    List<Beacon> blist =  getBeacons();
+                    //List<Beacon> blist =  getBeacons();  //packet manager에 들어온것
+                    List<Beacon> blist = getUsableBeacons(BeaconManager.getInstance().getBeaconMap().values()); //location 구할때 사용되는것
+
                     for (Beacon beacon : blist) {
                          beacon.getDistance();
                         System.out.print("yskim lo beacon Minor >>"+((IBeacon)beacon).getMinor()+"  Distance: "+beacon.getDistance()+"\n");
 
                     }
-                    System.out.print("yskim lo beacon Minor =======================================================================\n");
 
-                    if(location.getAccuracy()>2.8)
+                    if(location.getAccuracy()<2.8)
                     {
                         System.out.print("yskim lo point >>"+location.getLongitude()+","+location.getLatitude()+"   "+location.getAccuracy()+"\n");
                         Message msg = messagehandler.obtainMessage();
@@ -321,7 +324,7 @@ public class MainActivity extends AppCompatActivity  {
                         System.out.print("yskim lo point <<"+location.getLongitude()+","+location.getLatitude()+"   "+location.getAccuracy()+"\n");
                         //정확성떨어지는것
                     }
-
+                    System.out.print("yskim lo beacon Minor =======================================================================\n");
 
                 }
             }

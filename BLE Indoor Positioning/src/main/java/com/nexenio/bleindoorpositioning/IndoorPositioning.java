@@ -91,6 +91,7 @@ public class IndoorPositioning implements LocationProvider, BeaconUpdateListener
         List<Beacon> usableBeacons = getUsableBeacons(BeaconManager.getInstance().getBeaconMap().values());
 
         if (usableBeacons.size() < MINIMUM_BEACON_COUNT) {
+            System.out.print("< MINIMUM_BEACON_COUNT : "+usableBeacons.size() +"\n");
             return;
         } else if (usableBeacons.size() > MINIMUM_BEACON_COUNT) {
             Collections.sort(usableBeacons, BeaconUtil.DescendingRssiComparator);
