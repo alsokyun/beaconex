@@ -205,28 +205,25 @@ let initMap = function(){
  		geometry: new ol.geom.Point(cord),
  	  });
 
-
+/*
 var iconBlue = new ol.style.Style({
       image: new ol.style.Icon({
-        anchor: [10, 10],
-        anchorXUnits: 'pixels',
-        anchorYUnits: 'pixels',
+       anchor: [0.5, 1],
         opacity: 1,
         src: './img/user_icon.png'
 
       })
     });
     marker.setStyle(iconBlue);
-
+*/
  	marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
 
- 	//source.clear();
  	try{
  	 	source1.removeFeature(pre_marker);
  	}catch(e){}
 
+	source1.addFeature(marker);
 
- 	source1.addFeature(marker);
  	pre_marker = marker;
  	//alert(1);
 
@@ -239,33 +236,19 @@ let pointMaker2 = function(cord){
 	// convert the generated point to a OpenLayers feature
 	let marker = new ol.Feature({
 		geometry: new ol.geom.Point(cord),
-		   text: new ol.style.Text({
-                text: "Test text",
-                scale: 1.2,
-                fill: new ol.style.Fill({
-                  color: "#ff0"
-                }),
-                stroke: new ol.style.Stroke({
-                  color: "0",
-                  width: 3
-                })
-              })
-            });
 
+            });
+/*
  var iconBlue = new ol.style.Style({
       image: new ol.style.Icon({
-        anchor: [10, 10],
-        anchorXUnits: 'pixels',
-        anchorYUnits: 'pixels',
+        anchor: [0.5, 1],
         opacity: 1,
         src: './img/beacon_icon.png'
 
       })
     });
     marker.setStyle(iconBlue);
-
-
-
+*/
 	marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
 
 	source1.addFeature(marker);
