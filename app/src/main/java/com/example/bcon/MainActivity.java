@@ -307,6 +307,7 @@ public class MainActivity extends AppCompatActivity  {
 
                     }
                     System.out.print("yskim lo beacon Minor =======================================================================\n");
+
                     if(location.getAccuracy()>2.8)
                     {
                         System.out.print("yskim lo point >>"+location.getLongitude()+","+location.getLatitude()+"   "+location.getAccuracy()+"\n");
