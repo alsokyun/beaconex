@@ -197,27 +197,65 @@ let initMap = function(){
 
 
 // 포인트 표시
-let pointMaker = function(cord){
-    console.log("pointMaker .. " + cord);
+ let pointMaker = function(cord){
+     console.log("pointMaker .. " + cord);
+
+ 	// convert the generated point to a OpenLayers feature
+ 	let marker = new ol.Feature({
+ 		geometry: new ol.geom.Point(cord),
+ 	  });
+
+/*
+var iconBlue = new ol.style.Style({
+      image: new ol.style.Icon({
+       anchor: [0.5, 1],
+        opacity: 1,
+        src: './img/user_icon.png'
+
+      })
+    });
+    marker.setStyle(iconBlue);
+*/
+ 	marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
+
+ 	try{
+ 	 	source1.removeFeature(pre_marker);
+ 	}catch(e){}
+
+	source1.addFeature(marker);
+
+ 	pre_marker = marker;
+ 	//alert(1);
+
+ }
+
+// 포인트 표시
+let pointMaker2 = function(cord){
+    console.log("pointMaker2 .. " + cord);
 
 	// convert the generated point to a OpenLayers feature
 	let marker = new ol.Feature({
 		geometry: new ol.geom.Point(cord),
-	  });
+
+            });
+/*
+ var iconBlue = new ol.style.Style({
+      image: new ol.style.Icon({
+        anchor: [0.5, 1],
+        opacity: 1,
+        src: './img/beacon_icon.png'
+
+      })
+    });
+    marker.setStyle(iconBlue);
+*/
 	marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
 
-	//source.clear();
-	try{
-	 	source1.removeFeature(pre_marker);
-	}catch(e){}
-
 	source1.addFeature(marker);
-	pre_marker = marker;
+	//pre_marker = marker;
 	//alert(1);
 
 }
-
-
 
 
 
@@ -230,8 +268,36 @@ let fn_layer_Load = function(){
 	gfn_loadFile("roads-seoul.geojson", function(text){
 		_json = JSON.parse(text);
 
+   var style = new ol.style.Style({
+                fill: new ol.style.Fill({
+                    color: 'rgba(255, 0, 0, 1)'
+                }),
+                stroke: new ol.style.Stroke({
+                    width: 2,
+                    color: 'rgba(255, 0, 0, 1)'
+                }),
+                image: new ol.style.Circle({
+                    fill: new ol.style.Fill({
+                        color: 'rgba(255, 0, 0, 1)'
+                    }),
+                    stroke: new ol.style.Stroke({
+                        width: 1,
+                        color: 'rgba(255, 0, 0, 1)'
+                    }),
+                    radius: 7
+                }),
+                 text: new ol.style.Text({
+                    text: 'FISH\nTEXT',
+                    scale: [0, 0],
+                    rotation: Math.PI / 4,
+                    textAlign: 'center',
+                    textBaseline: 'top',
+                  }),
+            });
+
 		vectorLayer = new ol.layer.Vector({
 		  source: source1,
+         style: style
 		});
 
 		let features = GeoJSON.readFeatures(_json);

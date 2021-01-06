@@ -21,6 +21,7 @@ import com.nexenio.bleindoorpositioning.ble.advertising.IndoorPositioningAdverti
 import com.nexenio.bleindoorpositioning.ble.beacon.Beacon;
 import com.nexenio.bleindoorpositioning.ble.beacon.BeaconManager;
 import com.nexenio.bleindoorpositioning.ble.beacon.BeaconUpdateListener;
+import com.nexenio.bleindoorpositioning.ble.beacon.IBeacon;
 import com.nexenio.bleindoorpositioning.ble.beacon.filter.BeaconFilter;
 import com.nexenio.bleindoorpositioning.ble.beacon.filter.IBeaconFilter;
 import com.nexenio.bleindoorpositioning.location.Location;
@@ -31,6 +32,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import static com.nexenio.bleindoorpositioning.IndoorPositioning.getUsableBeacons;
+
 
 public class MainActivity extends AppCompatActivity  {
 
@@ -38,6 +41,7 @@ public class MainActivity extends AppCompatActivity  {
     /**
      * 비콘관련
      */
+    protected BeaconManager beaconManager = BeaconManager.getInstance();
     protected LocationListener deviceLocationListener;
     protected BeaconUpdateListener beaconUpdateListener;
     protected List<BeaconFilter> beaconFilters = new ArrayList<>();
@@ -74,11 +78,13 @@ public class MainActivity extends AppCompatActivity  {
         deviceLocationListener = createDeviceLocationListener();
         beaconUpdateListener = createBeaconUpdateListener();
 
+
+
         InitAttacch();
 
 
 
-
+//aaaaaaaaaaaaaaaaaaaaaaaaaaa
 
         /**
          * 웹뷰 초기화
@@ -140,12 +146,15 @@ public class MainActivity extends AppCompatActivity  {
         mWebView.loadUrl("file:///android_asset/WWW/index.html");
 
 
+
         try {
             Thread.sleep(2000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        AndroidLocationProvider.requestLocationEnabling(MainActivity.this);
+
+
+        //AndroidLocationProvider.requestLocationEnabling(MainActivity.this);
 
     }
 
@@ -197,6 +206,16 @@ public class MainActivity extends AppCompatActivity  {
         }
         BluetoothClient.startScanning();
 
+
+
+        String temp="[127.17473,37.42309]";  //10
+        mWebView.loadUrl("javascript:pointMaker2(" + temp + ")");
+        temp="[127.17492,37.42304]";  //9
+        mWebView.loadUrl("javascript:pointMaker2(" + temp + ")");
+        temp="[127.17492,37.42311]";  //7
+        mWebView.loadUrl("javascript:pointMaker2(" + temp + ")");
+        temp="[127.17474,37.42303]";  //1604
+        mWebView.loadUrl("javascript:pointMaker2(" + temp + ")");
 
     }
 
@@ -262,6 +281,7 @@ public class MainActivity extends AppCompatActivity  {
 
     public void InitAttacch()
     {
+        beaconFilters.add(uuidFilter);
         IndoorPositioning.getInstance().setIndoorPositioningBeaconFilter(uuidFilter);
         IndoorPositioning.registerLocationListener(deviceLocationListener);
         AndroidLocationProvider.registerLocationListener(deviceLocationListener);
@@ -282,17 +302,52 @@ public class MainActivity extends AppCompatActivity  {
             @Override
             public void onLocationUpdated(LocationProvider locationProvider, Location location) {
                 if (locationProvider == IndoorPositioning.getInstance()) {
-                    System.out.print("yskim lo >>"+location.getLongitude()+"\n");
+                    //List<Beacon> blist =  getBeacons();  //packet manager에 들어온것
+                    List<Beacon> blist = getUsableBeacons(BeaconManager.getInstance().getBeaconMap().values()); //location 구할때 사용되는것
 
-                    Message msg = messagehandler.obtainMessage();
-                    msg.what = 0;
-                    msg.obj = "[" + location.getLongitude() + "," + location.getLatitude() + "]";
-                    messagehandler.sendMessage(msg);//스케줄타이머작업 타입
+                    for (Beacon beacon : blist) {
+                         beacon.getDistance();
+                        System.out.print("yskim lo beacon Minor >>"+((IBeacon)beacon).getMinor()+"  Distance: "+beacon.getDistance()+"\n");
+
+                    }
+
+                    if(location.getAccuracy()<2.8)
+                    {
+                        System.out.print("yskim lo point >>"+location.getLongitude()+","+location.getLatitude()+"   "+location.getAccuracy()+"\n");
+                        Message msg = messagehandler.obtainMessage();
+                        msg.what = 0;
+                        msg.obj = "[" + location.getLongitude() + "," + location.getLatitude() + "]";
+                        messagehandler.sendMessage(msg);//스케줄타이머작업 타입
+                    }
+                    else
+                    {
+                        System.out.print("yskim lo point <<"+location.getLongitude()+","+location.getLatitude()+"   "+location.getAccuracy()+"\n");
+                        //정확성떨어지는것
+                    }
+                    System.out.print("yskim lo beacon Minor =======================================================================\n");
 
                 }
             }
         };
     }
+
+
+    protected List<Beacon> getBeacons() {
+        if (beaconFilters.isEmpty()) {
+            return new ArrayList<>(beaconManager.getBeaconMap().values());
+        }
+        List<Beacon> beacons = new ArrayList<>();
+        for (Beacon beacon : beaconManager.getBeaconMap().values()) {
+            for (BeaconFilter beaconFilter : beaconFilters) {
+                if (beaconFilter.matches(beacon)) {
+                    beacons.add(beacon);
+                    break;
+                }
+            }
+        }
+        return beacons;
+    }
+
 
 
     protected BeaconUpdateListener createBeaconUpdateListener() {
