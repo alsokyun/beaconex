@@ -147,7 +147,7 @@ public class MainActivity extends AppCompatActivity  {
         }
 
 
-        AndroidLocationProvider.requestLocationEnabling(MainActivity.this);
+        //AndroidLocationProvider.requestLocationEnabling(MainActivity.this);
 
     }
 

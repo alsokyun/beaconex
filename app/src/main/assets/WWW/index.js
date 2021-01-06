@@ -224,7 +224,33 @@ let pointMaker2 = function(cord){
 	// convert the generated point to a OpenLayers feature
 	let marker = new ol.Feature({
 		geometry: new ol.geom.Point(cord),
-	  });
+		   text: new ol.style.Text({
+                text: "Test text",
+                scale: 1.2,
+                fill: new ol.style.Fill({
+                  color: "#ff0"
+                }),
+                stroke: new ol.style.Stroke({
+                  color: "0",
+                  width: 3
+                })
+              })
+            });
+
+ var iconBlue = new ol.style.Style({
+      image: new ol.style.Icon({
+        anchor: [10, 10],
+        anchorXUnits: 'pixels',
+        anchorYUnits: 'pixels',
+        opacity: 1,
+        src: './img/beacon-icon.png'
+
+      })
+    });
+    marker.setStyle(iconBlue);
+
+
+
 	marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
 
 	source1.addFeature(marker);
@@ -262,6 +288,13 @@ let fn_layer_Load = function(){
                     }),
                     radius: 7
                 }),
+                 text: new ol.style.Text({
+                    text: 'FISH\nTEXT',
+                    scale: [0, 0],
+                    rotation: Math.PI / 4,
+                    textAlign: 'center',
+                    textBaseline: 'top',
+                  }),
             });
 
 		vectorLayer = new ol.layer.Vector({
