@@ -21,6 +21,7 @@ import com.nexenio.bleindoorpositioning.ble.advertising.IndoorPositioningAdverti
 import com.nexenio.bleindoorpositioning.ble.beacon.Beacon;
 import com.nexenio.bleindoorpositioning.ble.beacon.BeaconManager;
 import com.nexenio.bleindoorpositioning.ble.beacon.BeaconUpdateListener;
+import com.nexenio.bleindoorpositioning.ble.beacon.IBeacon;
 import com.nexenio.bleindoorpositioning.ble.beacon.filter.BeaconFilter;
 import com.nexenio.bleindoorpositioning.ble.beacon.filter.IBeaconFilter;
 import com.nexenio.bleindoorpositioning.location.Location;
@@ -38,6 +39,7 @@ public class MainActivity extends AppCompatActivity  {
     /**
      * 비콘관련
      */
+    protected BeaconManager beaconManager = BeaconManager.getInstance();
     protected LocationListener deviceLocationListener;
     protected BeaconUpdateListener beaconUpdateListener;
     protected List<BeaconFilter> beaconFilters = new ArrayList<>();
@@ -73,6 +75,8 @@ public class MainActivity extends AppCompatActivity  {
 
         deviceLocationListener = createDeviceLocationListener();
         beaconUpdateListener = createBeaconUpdateListener();
+
+
 
         InitAttacch();
 
@@ -275,6 +279,7 @@ public class MainActivity extends AppCompatActivity  {
 
     public void InitAttacch()
     {
+        beaconFilters.add(uuidFilter);
         IndoorPositioning.getInstance().setIndoorPositioningBeaconFilter(uuidFilter);
         IndoorPositioning.registerLocationListener(deviceLocationListener);
         AndroidLocationProvider.registerLocationListener(deviceLocationListener);
@@ -295,17 +300,50 @@ public class MainActivity extends AppCompatActivity  {
             @Override
             public void onLocationUpdated(LocationProvider locationProvider, Location location) {
                 if (locationProvider == IndoorPositioning.getInstance()) {
-                    System.out.print("yskim lo >>"+location.getLongitude()+"\n");
+                    List<Beacon> blist =  getBeacons();
+                    for (Beacon beacon : blist) {
+                         beacon.getDistance();
+                        System.out.print("yskim lo beacon Minor >>"+((IBeacon)beacon).getMinor()+"  Distance: "+beacon.getDistance()+"\n");
 
-                    Message msg = messagehandler.obtainMessage();
-                    msg.what = 0;
-                    msg.obj = "[" + location.getLongitude() + "," + location.getLatitude() + "]";
-                    messagehandler.sendMessage(msg);//스케줄타이머작업 타입
+                    }
+                    System.out.print("yskim lo beacon Minor =======================================================================\n");
+                    if(location.getAccuracy()>2.8)
+                    {
+                        System.out.print("yskim lo point >>"+location.getLongitude()+","+location.getLatitude()+"   "+location.getAccuracy()+"\n");
+                        Message msg = messagehandler.obtainMessage();
+                        msg.what = 0;
+                        msg.obj = "[" + location.getLongitude() + "," + location.getLatitude() + "]";
+                        messagehandler.sendMessage(msg);//스케줄타이머작업 타입
+                    }
+                    else
+                    {
+                        System.out.print("yskim lo point <<"+location.getLongitude()+","+location.getLatitude()+"   "+location.getAccuracy()+"\n");
+                        //정확성떨어지는것
+                    }
+
 
                 }
             }
         };
     }
+
+
+    protected List<Beacon> getBeacons() {
+        if (beaconFilters.isEmpty()) {
+            return new ArrayList<>(beaconManager.getBeaconMap().values());
+        }
+        List<Beacon> beacons = new ArrayList<>();
+        for (Beacon beacon : beaconManager.getBeaconMap().values()) {
+            for (BeaconFilter beaconFilter : beaconFilters) {
+                if (beaconFilter.matches(beacon)) {
+                    beacons.add(beacon);
+                    break;
+                }
+            }
+        }
+        return beacons;
+    }
+
 
 
     protected BeaconUpdateListener createBeaconUpdateListener() {
