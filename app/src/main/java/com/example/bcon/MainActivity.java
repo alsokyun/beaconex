@@ -311,7 +311,7 @@ public class MainActivity extends AppCompatActivity  {
 
                     }
 
-                    if(location.getAccuracy()<100)
+                    //if(location.getAccuracy()<100)
                     {
                         System.out.print("yskim lo point >>"+location.getLongitude()+","+location.getLatitude()+"   "+location.getAccuracy()+"\n");
                         Message msg = messagehandler.obtainMessage();
@@ -319,11 +319,7 @@ public class MainActivity extends AppCompatActivity  {
                         msg.obj = "[" + location.getLongitude() + "," + location.getLatitude() + "]";
                         messagehandler.sendMessage(msg);//스케줄타이머작업 타입
                     }
-                    else
-                    {
-                        System.out.print("yskim lo point <<"+location.getLongitude()+","+location.getLatitude()+"   "+location.getAccuracy()+"\n");
-                        //정확성떨어지는것
-                    }
+
 
                     System.out.print("yskim lo beacon Minor =======================================================================\n");
 

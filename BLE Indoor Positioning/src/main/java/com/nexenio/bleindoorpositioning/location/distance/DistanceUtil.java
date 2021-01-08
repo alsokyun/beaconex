@@ -10,8 +10,8 @@ import java.util.concurrent.TimeUnit;
 
 public abstract class DistanceUtil {
 
-    //public static final double HUMAN_WALKING_SPEED = 1.388889; // meters per second
-    public static final double HUMAN_WALKING_SPEED = 0.5; // yskim
+    public static final double HUMAN_WALKING_SPEED = 1.388889; // meters per second
+    //public static final double HUMAN_WALKING_SPEED = 0.5; // yskim
 
     public static long getClosestEvenDistance(double distance, int evenIncrement) {
         return Math.round(distance / evenIncrement) * evenIncrement;
