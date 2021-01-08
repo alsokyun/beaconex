@@ -85,6 +85,7 @@ public class BluetoothClient {
 
                     @Override
                     public void onError(Throwable e) {
+                        System.out.print("1>>>>>>>8 Bluetooth scanning error"+"\n");
                         Log.e(TAG, "Bluetooth scanning error", e);
                     }
 
@@ -124,8 +125,10 @@ public class BluetoothClient {
     private void processScanResult(@NonNull ScanResult scanResult) {
         String macAddress = scanResult.getBleDevice().getMacAddress();
         byte[] data = scanResult.getScanRecord().getBytes();
+
         AdvertisingPacket advertisingPacket = BeaconManager.processAdvertisingData(macAddress, data, scanResult.getRssi());
         if (advertisingPacket != null) {
+
             Beacon beacon = BeaconManager.getBeacon(macAddress, advertisingPacket);
 
             Log.d(TAG, "yskim processScanResult : "+((IBeacon) beacon).getMinor()+"  "+scanResult.getBleDevice().getBluetoothDevice().getName()+"   "+ scanResult.getRssi());
@@ -133,7 +136,14 @@ public class BluetoothClient {
             if (beacon instanceof IBeacon && !beacon.hasLocation()) {
                 beacon.setLocationProvider(createDebuggingLocationProvider((IBeacon) beacon));
             }
+            else{
+                System.out.print("yskim processScanResult ok "+((IBeacon) beacon).getMinor()+"  "+scanResult.getBleDevice().getBluetoothDevice().getName()+"   "+ scanResult.getRssi()+"\n");
+            }
         }
+        else {
+            //System.out.print("1>>>>>>>7 fail "+macAddress+"\n");
+        }
+
     }
 
     private static IBeaconLocationProvider<IBeacon> createDebuggingLocationProvider(IBeacon iBeacon) {

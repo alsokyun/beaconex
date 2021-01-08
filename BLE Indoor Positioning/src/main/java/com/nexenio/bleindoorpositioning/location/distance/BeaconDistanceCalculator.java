@@ -22,7 +22,7 @@ public abstract class BeaconDistanceCalculator {
     public static final int CALIBRATED_RSSI_AT_ONE_METER = -62;
     //public static final int CALIBRATED_RSSI_AT_ONE_METER = -77;  //yskim
     public static final int SIGNAL_LOSS_AT_ONE_METER = -41;
-    //public static final int SIGNAL_LOSS_AT_ONE_METER = -10; //yskim
+    //public static final int SIGNAL_LOSS_AT_ONE_METER = -60; //yskim
     //public static final int CALIBRATED_RSSI_AT_ONE_METER = -100;
 
     //private static float pathLossParameter = PATH_LOSS_PARAMETER_OFFICE_HARD_PARTITION;

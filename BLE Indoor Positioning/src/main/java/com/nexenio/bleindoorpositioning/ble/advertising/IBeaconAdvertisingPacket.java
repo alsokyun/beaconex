@@ -86,6 +86,8 @@ public class IBeaconAdvertisingPacket extends AdvertisingPacket {
         if (!Arrays.equals(getBeaconTypeBytes(data), EXPECTED_BEACON_TYPE)) {
             return false;
         }
+
+
         return true;
     }
 

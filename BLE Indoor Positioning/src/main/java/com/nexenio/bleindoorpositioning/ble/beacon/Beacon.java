@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 public abstract class Beacon<P extends AdvertisingPacket> {
 
     public static final long MAXIMUM_PACKET_AGE = TimeUnit.SECONDS.toMillis(60);
+    //public static final long MAXIMUM_PACKET_AGE = TimeUnit.SECONDS.toMillis(5);  //yskim
 
     protected String macAddress;
     protected int rssi; // in dBm

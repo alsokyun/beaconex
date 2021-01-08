@@ -32,8 +32,10 @@ public class IndoorPositioning implements LocationProvider, BeaconUpdateListener
     public static final long UPDATE_INTERVAL_SLOW = 3000;
 
     public static final int ROOT_MEAN_SQUARE_THRESHOLD_STRICT = 5;
-    public static final int ROOT_MEAN_SQUARE_THRESHOLD_MEDIUM = 10;
-    public static final int ROOT_MEAN_SQUARE_THRESHOLD_LIGHT = 25;
+    //public static final int ROOT_MEAN_SQUARE_THRESHOLD_MEDIUM = 10;
+    public static final int ROOT_MEAN_SQUARE_THRESHOLD_LIGHT = 35;  //yskim
+    //public static final int ROOT_MEAN_SQUARE_THRESHOLD_LIGHT = 25;
+
 
     private static final int MINIMUM_BEACON_COUNT = 3; // multilateration requires at least 3 beacons
     private static final int MAXIMUM_BEACON_COUNT = 10;
@@ -43,7 +45,7 @@ public class IndoorPositioning implements LocationProvider, BeaconUpdateListener
     private double rootMeanSquareThreshold = ROOT_MEAN_SQUARE_THRESHOLD_LIGHT;
     //private double rootMeanSquareThreshold = ROOT_MEAN_SQUARE_THRESHOLD_MEDIUM;  //yskim
     //private int minimumRssiThreshold = -70;
-    private int minimumRssiThreshold = -90;  //yskim
+    private int minimumRssiThreshold = -80;  //yskim
 
 
     private static volatile IndoorPositioning instance;
@@ -91,7 +93,7 @@ public class IndoorPositioning implements LocationProvider, BeaconUpdateListener
         List<Beacon> usableBeacons = getUsableBeacons(BeaconManager.getInstance().getBeaconMap().values());
 
         if (usableBeacons.size() < MINIMUM_BEACON_COUNT) {
-            System.out.print("< MINIMUM_BEACON_COUNT : "+usableBeacons.size() +"\n");
+            System.out.print("< yskim MINIMUM_BEACON_COUNT : "+usableBeacons.size() +"\n");
             return;
         } else if (usableBeacons.size() > MINIMUM_BEACON_COUNT) {
             Collections.sort(usableBeacons, BeaconUtil.DescendingRssiComparator);
@@ -112,8 +114,12 @@ public class IndoorPositioning implements LocationProvider, BeaconUpdateListener
 
             // The root mean square of multilateration is used to filter out inaccurate locations.
             // Adjust value to allow location updates with higher deviation
+
+            System.out.print("yskim onLocationUpdated before: "+multilateration.getRMS() +"\n");
+
             if (multilateration.getRMS() < rootMeanSquareThreshold) {
                 locationPredictor.addLocation(location);
+                System.out.print("yskim onLocationUpdated after : "+multilateration.getRMS() +"\n");
                 onLocationUpdated(location);
             }
         } catch (TooManyEvaluationsException e) {

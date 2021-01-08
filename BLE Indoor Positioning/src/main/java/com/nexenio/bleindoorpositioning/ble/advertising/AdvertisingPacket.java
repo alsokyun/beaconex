@@ -22,9 +22,12 @@ public abstract class AdvertisingPacket {
     public static AdvertisingPacket from(byte[] data) {
         AdvertisingPacket advertisingPacket = null;
         if (IBeaconAdvertisingPacket.meetsSpecification(data)) {
+
             advertisingPacket = new IBeaconAdvertisingPacket(data);
+            System.out.print("1>>>>>>>1 "+advertisingPacket.getTimestamp()+"\n");
         } else if (EddystoneAdvertisingPacket.meetsSpecification(data)) {
             advertisingPacket = new EddystoneAdvertisingPacket(data);
+            System.out.print("1>>>>>>>2 "+advertisingPacket.getTimestamp()+"\n");
         }
         return advertisingPacket;
     }

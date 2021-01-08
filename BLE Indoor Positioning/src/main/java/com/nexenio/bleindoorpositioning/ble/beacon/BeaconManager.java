@@ -58,6 +58,7 @@ public class BeaconManager {
         if (advertisingPacket != null) {
             advertisingPacket.setRssi(rssi);
         }
+        System.out.print("1>>>>>>>6"+macAddress+"\n");
         return processAdvertisingPacket(macAddress, advertisingPacket);
     }
 
@@ -65,8 +66,15 @@ public class BeaconManager {
         if (advertisingPacket == null) {
             return null;
         }
+
+
+        //if(advertisingPacket)  //yskim
+        //System.out.print(advertisingPacket.getData())
         BeaconManager instance = getInstance();
         String key = getBeaconKey(macAddress, advertisingPacket);
+
+        System.out.print("1>>>>>>>5"+key+"\n");
+
         Beacon beacon;
         if (instance.beaconMap.containsKey(key)) {
             beacon = instance.beaconMap.get(key);
@@ -150,8 +158,10 @@ public class BeaconManager {
         AdvertisingPacket latestAdvertisingPacket;
         List<String> inactiveBeaconKeys = new ArrayList<>();
         for (Iterator<Map.Entry<String, Beacon>> beaconMapIterator = instance.beaconMap.entrySet().iterator(); beaconMapIterator.hasNext(); ) {
+
             Map.Entry<String, Beacon> beaconEntry = beaconMapIterator.next();
             latestAdvertisingPacket = beaconEntry.getValue().getLatestAdvertisingPacket();
+            System.out.print("1>>>>>>>3"+beaconEntry.getKey()+"   "+latestAdvertisingPacket.getTimestamp()+"\n");
             if (latestAdvertisingPacket == null || latestAdvertisingPacket.getTimestamp() < minimumAdvertisingTimestamp) {
                 inactiveBeaconKeys.add(beaconEntry.getKey());
             }

@@ -302,8 +302,8 @@ public class MainActivity extends AppCompatActivity  {
             @Override
             public void onLocationUpdated(LocationProvider locationProvider, Location location) {
                 if (locationProvider == IndoorPositioning.getInstance()) {
-                    //List<Beacon> blist =  getBeacons();  //packet manager에 들어온것
-                    List<Beacon> blist = getUsableBeacons(BeaconManager.getInstance().getBeaconMap().values()); //location 구할때 사용되는것
+                    List<Beacon> blist =  getBeacons();  //packet manager에 들어온것
+                    //List<Beacon> blist = getUsableBeacons(BeaconManager.getInstance().getBeaconMap().values()); //location 구할때 사용되는것
 
                     for (Beacon beacon : blist) {
                          beacon.getDistance();
@@ -311,7 +311,7 @@ public class MainActivity extends AppCompatActivity  {
 
                     }
 
-                    if(location.getAccuracy()<2.8)
+                    if(location.getAccuracy()<100)
                     {
                         System.out.print("yskim lo point >>"+location.getLongitude()+","+location.getLatitude()+"   "+location.getAccuracy()+"\n");
                         Message msg = messagehandler.obtainMessage();
@@ -324,6 +324,7 @@ public class MainActivity extends AppCompatActivity  {
                         System.out.print("yskim lo point <<"+location.getLongitude()+","+location.getLatitude()+"   "+location.getAccuracy()+"\n");
                         //정확성떨어지는것
                     }
+
                     System.out.print("yskim lo beacon Minor =======================================================================\n");
 
                 }
