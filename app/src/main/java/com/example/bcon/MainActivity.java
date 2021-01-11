@@ -270,14 +270,9 @@ public class MainActivity extends AppCompatActivity  {
         }
     }
 
-
-
-
     /************************************************************
      * 비콘관련 클래스, 메소드
      */
-
-
 
     public void InitAttacch()
     {
@@ -308,7 +303,6 @@ public class MainActivity extends AppCompatActivity  {
                     for (Beacon beacon : blist) {
                          beacon.getDistance();
                         System.out.print("yskim lo beacon Minor >>"+((IBeacon)beacon).getMinor()+"  Distance: "+beacon.getDistance()+"\n");
-
                     }
 
                     //if(location.getAccuracy()<100)
@@ -319,10 +313,7 @@ public class MainActivity extends AppCompatActivity  {
                         msg.obj = "[" + location.getLongitude() + "," + location.getLatitude() + "]";
                         messagehandler.sendMessage(msg);//스케줄타이머작업 타입
                     }
-
-
                     System.out.print("yskim lo beacon Minor =======================================================================\n");
-
                 }
             }
         };
