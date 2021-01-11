@@ -1,5 +1,32 @@
+/**
+ * 전역변수
+ */
+
 /// Constant
 const res_meter = 2; //path 격자단위 m
+const mod_foctor = 1.3; //비콘거리 보정factor
+//비콘디바이스정보
+const refBconAry = [
+	{minor:10, xy: 	[14157026.19, 4498245.31]	},//양전무
+	{minor:7, xy: 	[14157047.34, 4498248.11]	},//김영선
+	{minor:9, xy: 	[14157047.34, 4498238.30]	},//회의실
+	{minor:1604, xy:[14157027.30, 4498236.90]	},//김연희
+];
+//const refBconAry = [
+//	{minor:10, xy: [127.17473, 37.42309]},//양전무
+//	{minor:7, xy: [127.17492, 37.42311]},//김영선
+//	{minor:9, xy: [127.17492, 37.42304]},//회의실
+//	{minor:1604, xy: [127.17474, 37.42303]},//김연희
+//];
+
+
+//레이어의 모든 좌표들
+let latisAry = []; //[[1,2],[1,3],[1,4]...]
+
+//현재좌표
+let cur_xy;
+
+
 
 
 
@@ -15,17 +42,17 @@ function rotateProjection(projection, angle, extent) {
 	  );
 	  return [coord[0] + anchor[0], coord[1] + anchor[1]];
 	}
-  
+
 	function rotateTransform(coordinate) {
 	  return rotateCoordinate(coordinate, angle, ol.extent.getCenter(extent));
 	}
-  
+
 	function normalTransform(coordinate) {
 	  return rotateCoordinate(coordinate, -angle, ol.extent.getCenter(extent));
 	}
-  
+
 	let normalProjection = ol.proj.get(projection);
-  
+
 	let rotatedProjection = new ol.proj.Projection({
 	  code:
 		normalProjection.getCode() +
@@ -37,7 +64,7 @@ function rotateProjection(projection, angle, extent) {
 	  extent: extent
 	});
 	ol.proj.addProjection(rotatedProjection);
-  
+
 	ol.proj.addCoordinateTransforms(
 	  "EPSG:4326",
 	  rotatedProjection,
@@ -48,7 +75,7 @@ function rotateProjection(projection, angle, extent) {
 		return ol.proj.transform(normalTransform(coordinate), projection, "EPSG:4326");
 	  }
 	);
-  
+
 	ol.proj.addCoordinateTransforms(
 	  "EPSG:3857",
 	  rotatedProjection,
@@ -59,7 +86,7 @@ function rotateProjection(projection, angle, extent) {
 		return ol.proj.transform(normalTransform(coordinate), projection, "EPSG:3857");
 	  }
 	);
-  
+
 	// also set up transforms with any projections defined using proj4
 	if (typeof proj4 !== "undefined") {
 	  let projCodes = Object.keys(proj4.defs);
@@ -85,7 +112,7 @@ function rotateProjection(projection, angle, extent) {
 		}
 	  });
 	}
-  
+
 	return rotatedProjection;
   }
 
@@ -124,7 +151,7 @@ let gfn_resolvLine = function(seg, m){
 	//segment = [x1,y1, x2,y2];
 	let AB = Math.sqrt((seg[2]-seg[0])^2 + (seg[3]-seg[1])^2); //선분길이
 	//let t = Math.atan((seg[3]-seg[1])/(seg[2]-seg[0])); //두점의 기울기각도
-	let t = gfn_atan((seg[2]-seg[0]), (seg[3]-seg[1])); 
+	let t = gfn_atan((seg[2]-seg[0]), (seg[3]-seg[1]));
 
 	let dx = m * Math.cos(t); //x증가분(부호포함)
 	let dy = m * Math.sin(t); //y증가분(부호포함)
@@ -136,7 +163,7 @@ let gfn_resolvLine = function(seg, m){
 
 	//기울기가 큰 축으로 분해한다...
 	if(Math.abs(dx) > Math.abs(dy)){
-		//x축으로 분해          
+		//x축으로 분해
 		while(true){
 			x += dx;
 			y += dy;
@@ -147,13 +174,13 @@ let gfn_resolvLine = function(seg, m){
 			else{
 				if(x < seg[2])	break; //감소방향
 			}
-			
+
 			// extSeg = extSeg.concat([x,y]);
 			extSeg.push([x,y]);
 		}
 	}
 	else{
-		//y축으로 분해          
+		//y축으로 분해
 		while(true){
 			x += dx;
 			y += dy;
@@ -206,32 +233,193 @@ let gfn_atan = function(dx, dy){
 
 
 
+
+
+
+
+
+
+
+
+
 /**
- * 격자상 위치결정
- * @param {xy [x,y]} 비콘위경도
- * @param {_xy [_x,_y]} 이전 격자상 위치
+ * 격자상 위치결정 - Distance
+ * @param {bcAry [{minor:1, dist: 4},{minor:2, dist: 33},{minor:3, dist: 44},{minor:4, dist: 11}]} 비콘거리set
  */
-let gfn_nextPos = function(xy, _xy){
+let gfn_calLatis = function(bcAry){
 
-	//이전위치없으면 격자상에 그냥 결정
-	if(_xy == null){
+debugger;
 
+
+
+	//약한신호 무시 factor
+	let maxRange = 30.0;
+
+	//비콘영역 스케일로 필터링하고, xy 좌표추가
+	try {
+		bcAry = gfn_realAry(bcAry, maxRange);
+		bcAry.sort(function(a,b){
+			return a.dist - b.dist; //가까운순서로 3개 선택
+		});
+	} catch (error) {}
+
+	if(bcAry.length < 2)	return null; //2개 이하면 계산못함.. 원칙은 3개가 필요하지만 데이터없는경우 2개로도 계산해야할듯..
+
+    //격자없으면 exit
+    if(!latisAry)    return null;
+	let _latisAry = latisAry;
+
+
+	//기준비콘 동심원범위 (참고용)
+	source3.clear();
+	for(let i=0; i<3; i++){
+	    //동심원
+		let range = new ol.Feature({
+			geometry: new ol.geom.Circle([bcAry[i].xy[0],bcAry[i].xy[1]],bcAry[i].dist),
+		});
+		source3.addFeature(range);
+		//비콘마커
+		let marker = new ol.Feature({
+			geometry: new ol.geom.Point(bcAry[i].xy),
+		});
+		marker.setProperties({"radius": bcAry[i].dist});
+		source3.addFeature(marker);
+	}
+	try{
+        vectorLayer3.setZIndex(5);
+		map.addLayer(vectorLayer3);
+	}catch(e){}
+
+
+
+	//각 비콘기준점에서 격자 필터링제외
+	//1번째
+	_latisAry = latisAry;
+	let latisAry0 = _latisAry.filter( p => gfn_dist(bcAry[0].xy, p) < bcAry[0].dist * mod_foctor );
+	//2번째
+	_latisAry = latisAry;
+	let latisAry1 = _latisAry.filter( p => gfn_dist(bcAry[1].xy, p) < bcAry[1].dist * mod_foctor );
+	//3번째
+	_latisAry = latisAry;
+	let latisAry2 = _latisAry.filter( p => gfn_dist(bcAry[2].xy, p) < bcAry[2].dist * mod_foctor );
+
+
+	//각영역 교집합
+	let ary012 = latisAry0.filter( p =>  gfn_hasAry(latisAry1, p)).filter( p =>  gfn_hasAry(latisAry2, p));
+	let ary01;
+	let ary12;
+	let ary20;
+	//3영역 교집합이 있으면 현재위치와 근접한 놈으로 결정
+	if(ary012 != null && ary012.length > 0 ){
+		cur_xy = gfn_getNear(ary012, cur_xy);
+	}
+	// 2영역 교집합이 없으면 차선을 결정
+	else if((ary01 = latisAry0.filter( x =>  gfn_hasAry(latisAry1, x))).length > 0){
+		cur_xy = gfn_getNear(ary01, cur_xy);
+	}
+	else if((ary12 = latisAry1.filter( x =>  gfn_hasAry(latisAry2, x))).length > 0){
+		cur_xy = gfn_getNear(ary12, cur_xy);
+	}
+	else if((ary20 = latisAry2.filter( x =>  gfn_hasAry(latisAry0, x))).length > 0){
+		cur_xy = gfn_getNear(ary20, cur_xy);
+	}
+	//교집합이 없으면 null
+	else{
+		return null;
 	}
 
-	// 레이어의 모든 좌표들
-	let layerCoords = []; //[[1,2],[1,3],[1,4]...]
-	
+
+	return cur_xy;
+
+
+	//연속적으로 비콘에서 격자 필터링
+	// $.each(bcAry, function(idx, bc){
+	// 	_latisAry.filter( latis => gfn_dist(bc.xy, latis) > bc.dist );
+
+	// 	if(!_latisAry){
+	// 		//격자없음..
+	// 	}
+	// 	else if(_latisAry.length < 2){
+	// 		return false;//한개남으면 그냥 결정..
+	// 	}
+	// });
+
+
+
+
 
 }
 
 
+/**
+ * 해당영역의 측정거리만 유효한 거리로 간주
+ * @param {*} _bcAry 기준비콘
+ * @param {*} _maxRange 비콘영역스케일 m
+ */
+let gfn_realAry = function(_bcAry, _maxRange){
+	let __bcAry = [];
+	$.each(_bcAry, function(idx, bc){
+		if(bc.dist < _maxRange){
+			//ref비콘 위치넣어주기
+			$.each(refBconAry, function(idx, val){
+				if(val.minor == bc.minor) {
+					bc.xy = val.xy;
+					return false;
+				}
+			});
+			__bcAry.push(bc);
+		}
+	});
+	return __bcAry;
+}
 
 
 
+/**
+ * 두점사이의 거리 m
+ * @param {*} xy - [x,y]
+ * @param {*} xy2 - [x2,y2]
+ */
+let gfn_dist = function(xy, xy2){
+	return Math.sqrt(Math.pow(xy[0]-xy2[0],2) + Math.pow(xy[1]-xy2[1],2));
+}
+
+/**
+ * 배열에서 xy 좌표가 있는지 체크 .. 3857좌표에서 반올림
+ * @param {} ary
+ * @param {*} xy
+ */
+let gfn_hasAry = function(ary, xy){
+	let ret = false;
+	$.each(ary, function(idx, val){
+		if(Math.round(val[0]) == Math.round(xy[0]) && Math.round(val[1]) == Math.round(xy[1])){
+			ret = true;
+			return false;
+		}
+	});
+	return ret;
+}
 
 
+/**
+ * xy와 가장가까운 좌표선별
+ * @param {*} ary
+ * @param {*} xy
+ */
+let gfn_getNear = function(ary, xy){
+    if(!xy) return ary[0]; //현재위치없으면 첫번째놈으로..
 
 
+	$.each(ary, function(idx, p){
+		p.dist = gfn_dist(p, xy);
+	});
+
+	ary.sort(function(a,b){
+		return a.dist - b.dist;//오름차순
+	});
+
+	return ary[0];
+}
 
 
 

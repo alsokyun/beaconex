@@ -43,10 +43,65 @@ let source2 = new ol.source.Vector();
 let vectorLayer2;
 
 //삐뽀 레이어
-let source3 = new ol.source.Vector({
-    wrapX: false,
+let source3 = new ol.source.Vector();
+//let vectorLayer3 = new ol.layer.Vector({
+//	source: source3,
+////	opacity: 0.5,
+//	style: new ol.style.Style({
+//        fill: new ol.style.Fill({
+//            color: 'rgba(255,255,255,0.2)'
+//        }),
+//        image: new ol.style.Circle({
+//            radius: 17,
+//            fill: new ol.style.Fill({
+//                color: "#3399ff",
+//            }),
+//            stroke: new ol.style.Stroke({
+//                color: '#0000ff',
+//                width: 1
+//            }),
+//        }),
+//    }),
+//});
+
+let vectorLayer3 = new ol.layer.Vector({
+	source: source3,
+	opacity: 0.5,
+	style: function (feature) {
+		var geometry = feature.getGeometry();
+		console.log("radius - " + feature.getProperties().radius);
+		return new ol.style.Style({
+			fill: new ol.style.Fill({
+				color: 'rgba(255,255,255,0.2)'
+			}),
+			image: new ol.style.Circle({
+				radius: 10,
+				fill: new ol.style.Fill({
+					color: "#3399ff",
+				}),
+                //				stroke: new ol.style.Stroke({
+                //					color: '#0000ff',
+                //					width: 1
+                //				}),
+			}),
+            stroke: new ol.style.Stroke({
+                color: '#0000ff',
+                width: 1
+            }),
+
+            text: new ol.style.Text({
+                font: '8px Verdana',
+                scale: 2,
+                text: feature.getProperties().radius === undefined ? "" :  feature.getProperties().radius + " m",
+                fill: new ol.style.Fill({ color: '#000' }),
+                //stroke: new ol.style.Stroke({ color: 'yellow', width: 3 })
+            }),
+        });
+
+	}
 });
-let vectorLayer3;
+
+
 
 //배경지도 타일맵 레이어
 let rasterLayer = new ol.layer.Tile({
@@ -101,8 +156,7 @@ let parser = new ol.format.WMTSCapabilities();
 let GeoJSON = new ol.format.GeoJSON();
 
 //이전포지션
-let pre_vectorLayer2;
-var	pre_marker;
+let	pre_marker;
 
 //편집객체
 let draw;
@@ -160,11 +214,6 @@ let initMap = function(){
 		//마커레이어
 		fn_layer_Pos();
 
-		//마커이동
-		let cnt = 0;
-		setInterval(function(){
-			move(cnt++);
-		}, 1000);
 
 
 		//이미지레이어
@@ -187,21 +236,21 @@ let initMap = function(){
 // 포인트 표시
 let pointMaker = function(cord){
     console.log("pointMaker .. " + cord);
+    if(gfn_isNull(cord))    return;
 
 	// convert the generated point to a OpenLayers feature
 	let marker = new ol.Feature({
 		geometry: new ol.geom.Point(cord),
 	  });
-	marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
+	//marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
 
-	//source.clear();
 	try{
 	 	source2.removeFeature(pre_marker);
 	}catch(e){}
-
-	source2.addFeature(marker);
-	pre_marker = marker;
-
+	try{
+        source2.addFeature(marker);
+        pre_marker = marker;
+	}catch(e){}
 }
 
 
@@ -211,7 +260,7 @@ let pointLatis = function(cord){
 	let marker = new ol.Feature({
 		geometry: new ol.geom.Point(cord),
 	  });
-	marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
+	//marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
 
 	source1.addFeature(marker);
 	try{
@@ -274,6 +323,7 @@ let fn_layer_Pos = function(){
       }),
 	});
 
+    vectorLayer2.setZIndex(4);
     map.addLayer(vectorLayer2);
 }
 
@@ -294,7 +344,6 @@ let fn_layer_Bcn = function(){
 	vectorLayer3 = new ol.layer.Vector({
 	  source: source3,
 	});
-
     map.addLayer(vectorLayer3);
 
     source3.on('addfeature', function (e) {
@@ -316,6 +365,19 @@ $(document).ready(function() {
 	
 	//지도초기화
 	initMap();
+
+	//격자불러오기
+	gfn_loadFile("dr_path.geojson", function(text){
+		let drawVector_Ary = JSON.parse(text);;
+
+		latisAry = [];
+		$.each(drawVector_Ary, function(idx, val){
+			let ft = GeoJSON.readFeatures(val);
+			$.each(ft[0].getGeometry().getCoordinates(), function(idx, val){
+				latisAry.push(val);
+			});
+		});
+	});
 
     //지도회전
     rot_Ang(90);
@@ -348,7 +410,7 @@ $(document).ready(function() {
             //라인스트링 표시
             $.each(drawVector_Ary, function(idx, val){
                 let ft = GeoJSON.readFeatures(val);
-                ft[0].getGeometry().transform('EPSG:4326','EPSG:3857');//좌표계로 변환
+                //ft[0].getGeometry().transform('EPSG:4326','EPSG:3857');//좌표계로 변환
                 drawVectorSource.addFeatures(ft);
             });
 

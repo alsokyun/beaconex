@@ -51,6 +51,15 @@
     <script text="javascript" src="cmm.js"></script>
     <script text="javascript" src="etc.js"></script>
     <script text="javascript" src="index.js"></script>
+    <script text="javascript" >
+        let fn_bcSet = function(bcAry){
+            let html = "";
+            $.each(bcAry, function(idx, bc){
+                html += "minor:" + bc.minor + ", dist: " + bc.dist + "<br>";
+            });
+            $("#bcSet").html(html);
+        }
+    </script>
 
 
 
@@ -58,18 +67,21 @@
 
 
 <body>
-    <div id="ctl1" >
-        <div id="demo" style="height:60px">
-            <p id='buttons'>
-                <button id='btn4'>Load Path</button>
-                <button id='btn3'>취소</button>
-                <button id='btn1'>Left</button>
-                <button id='btn2'>Right</button>
-            </p>
-        </div>
+<div id="ctl1" >
+    <div id="demo" style="height:25px">
+        <p id='buttons'>
+            <button id='btn4'>Load Path</button>
+            <button id='btn3'>취소</button>
+            <button id='btn1'>Left</button>
+            <button id='btn2'>Right</button>
+        </p>
     </div>
+    <div id="bcSet" style="text-align:center;">
 
-    <div id="map"></div>
+    </div>
+</div>
+
+<div id="map"></div>
 
 </body>
 </html>
