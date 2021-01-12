@@ -35,14 +35,14 @@ let map;
  * 레이어 선언부분
  */
 //로드 레이어
-let source1 = new ol.source.Vector();
-let vectorLayer1;
+let streetSource = new ol.source.Vector();
+let streetLayer;
 
 //마커포지션 레이어
-let source2 = new ol.source.Vector();
-let vectorLayer2;
+let posiSource = new ol.source.Vector();
+let posiLayer;
 
-//삐뽀 레이어
+//비콘삐뽀 레이어
 let source3 = new ol.source.Vector();
 //let vectorLayer3 = new ol.layer.Vector({
 //	source: source3,
@@ -109,7 +109,7 @@ let rasterLayer = new ol.layer.Tile({
 });
 
 //사무실이미지 레이어
-let source_img = new ol.source.ImageStatic({
+let imgSource = new ol.source.ImageStatic({
 	url:
 	  'dr_off.png',
 	crossOrigin: 'anonymous',
@@ -119,10 +119,10 @@ let source_img = new ol.source.ImageStatic({
 });
 let imageLayer;
 
-//라인편집 레이어
-let drawVectorSource = new ol.source.Vector();
-let drawVectorLayer = new ol.layer.Vector({
-	source: drawVectorSource,
+//라인Path 레이어
+let linePathSource = new ol.source.Vector();
+let linePathLayer = new ol.layer.Vector({
+	source: linePathSource,
 	style: new ol.style.Style({
 		fill: new ol.style.Fill({
 			color: 'rgba(255,255,255,0.2)'
@@ -138,6 +138,29 @@ let drawVectorLayer = new ol.layer.Vector({
 			})
 		}),
 	}),
+});
+
+//라인마커 레이어
+let lineMarkerSource = new ol.source.Vector();
+let lineMarkerLayer = new ol.layer.Vector({
+	source: lineMarkerSource,
+	 style: function(feature){
+	 	let styles = [];
+
+	 	feature.getGeometry().forEachSegment(function(start, end){
+	 		styles.push(new ol.style.Style({
+	 			geometry: new ol.geom.LineString([start, end]),
+	 			fill: new ol.style.Fill({
+	 				color: 'rgba(0,255,0,0.5)'
+	 			}),
+	 			stroke: new ol.style.Stroke({
+	 				color: '#00ff00',
+	 				width: 10
+	 			}),
+	 		}));
+	 	});
+	 	return styles;
+	 },
 });
 
 
@@ -221,10 +244,10 @@ let initMap = function(){
 
 
 
-		// moveMaker([127.17474, 37.42303]); //좌하
-		// moveMaker([127.17473, 37.42309]); //좌상
-		// moveMaker([127.17492, 37.42311]); //우상
-		// moveMaker([127.17492, 37.42304]); //우하
+		// movec([127.17474, 37.42303]); //좌하
+		// moveMarker([127.17473, 37.42309]); //좌상
+		// moveMarker([127.17492, 37.42311]); //우상
+		// moveMarker([127.17492, 37.42304]); //우하
 	});
 
 
@@ -234,8 +257,8 @@ let initMap = function(){
 
 
 // 포인트 표시
-let pointMaker = function(cord){
-    console.log("pointMaker .. " + cord);
+let pointMarker = function(cord){
+    console.log("pointMarker .. " + cord);
     if(gfn_isNull(cord))    return;
 
 	// convert the generated point to a OpenLayers feature
@@ -245,13 +268,31 @@ let pointMaker = function(cord){
 	//marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
 
 	try{
-	 	source2.removeFeature(pre_marker);
+	 	posiSource.removeFeature(pre_marker);
 	}catch(e){}
 	try{
-        source2.addFeature(marker);
+        posiSource.addFeature(marker);
         pre_marker = marker;
 	}catch(e){}
 }
+
+// 포인트선분으로 표시
+let lineMarker = function(cord){
+    console.log("lineMarker .. " + cord);
+    if(gfn_isNull(cord))    return;
+
+	// convert the generated point to a OpenLayers feature
+	let marker = new ol.Feature({
+		geometry: new ol.geom.LineString([gfn_isNull(cur_xy)? cord : cur_xy, cord]),
+	  });
+
+	try{
+        lineMarkerSource.addFeature(marker);
+	}catch(e){}
+
+}
+
+
 
 
 // 격자포인트 표시
@@ -262,9 +303,9 @@ let pointLatis = function(cord){
 	  });
 	//marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
 
-	source1.addFeature(marker);
+	streetSource.addFeature(marker);
 	try{
-        map.addLayer(vectorLayer1);
+        map.addLayer(streetLayer);
 	}catch(e){}
 }
 
@@ -281,18 +322,18 @@ let fn_layer_Load = function(){
 	gfn_loadFile("roads-seoul.geojson", function(text){
 		_json = JSON.parse(text);
 
-		vectorLayer1 = new ol.layer.Vector({
-		  source: source1,
+		streetLayer = new ol.layer.Vector({
+		  source: streetSource,
 		});
 
 		let features = GeoJSON.readFeatures(_json);
 		let street = features[0];
 
 		street.getGeometry().transform('EPSG:4326', 'EPSG:3857');
-		source1.addFeature(street);
+		streetSource.addFeature(street);
 
-        vectorLayer1.setZIndex(3);
-		map.addLayer(vectorLayer1);
+        streetLayer.setZIndex(3);
+		map.addLayer(streetLayer);
 
 	});
 
@@ -304,33 +345,33 @@ let fn_layer_Load = function(){
 
 let fn_layer_Pos = function(){
 	//포지션레이어
-	vectorLayer2 = new ol.layer.Vector({
-	  source: source2,
-      style: new ol.style.Style({
-        fill: new ol.style.Fill({
-            color: '#ff33cc'
-        }),
-        stroke: new ol.style.Stroke({
-            color: '#66ff66',
-            width: 3
-        }),
-        image: new ol.style.Circle({
-            radius: 7,
-            fill: new ol.style.Fill({
-                color: "#ff0000",
-            })
-        }),
-      }),
+	posiLayer = new ol.layer.Vector({
+	  source: posiSource,
+       style: new ol.style.Style({
+         fill: new ol.style.Fill({
+             color: '#ff33cc'
+         }),
+         stroke: new ol.style.Stroke({
+             color: '#66ff66',
+             width: 3
+         }),
+         image: new ol.style.Circle({
+             radius: 7,
+             fill: new ol.style.Fill({
+                 color: "#ff0000",
+             })
+         }),
+	    }),
 	});
 
-    vectorLayer2.setZIndex(4);
-    map.addLayer(vectorLayer2);
+    posiLayer.setZIndex(4);
+    map.addLayer(posiLayer);
 }
 
 let fn_layer_Img = function(){
 	//이미지레이어
 	imageLayer = new ol.layer.Image({		
-	  source: source_img,
+	  source: imgSource,
 	  opacity: 0.5,
 	  rotation: 3.14,
 	});
@@ -393,8 +434,8 @@ $(document).ready(function() {
 	$("#btn3").click(function(){
 
 		try{
-			map.removeLayer(vectorLayer1);
-			map.removeLayer(drawVectorLayer);
+			map.removeLayer(streetLayer);
+			map.removeLayer(linePathLayer);
 		}catch(e){}
 	});
 
@@ -411,12 +452,12 @@ $(document).ready(function() {
             $.each(drawVector_Ary, function(idx, val){
                 let ft = GeoJSON.readFeatures(val);
                 //ft[0].getGeometry().transform('EPSG:4326','EPSG:3857');//좌표계로 변환
-                drawVectorSource.addFeatures(ft);
+                linePathSource.addFeatures(ft);
             });
 
             try{
-                drawVectorLayer.setZIndex(2);
-                map.addLayer(drawVectorLayer);
+                linePathLayer.setZIndex(2);
+                map.addLayer(linePathLayer);
             }catch(e){}
 
             //resolved 포인트확인
@@ -427,6 +468,10 @@ $(document).ready(function() {
                 });
             });
 
+            try{
+                lineMarkerLayer.setZIndex(2);
+                map.addLayer(lineMarkerLayer);
+            }catch(e){}
         });
 
 	});

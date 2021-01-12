@@ -261,14 +261,14 @@ public class MainActivity extends AppCompatActivity  {
 
     //테스트용데이터...
     String[] ary = {"[14157033.626301805,4498237.59855357]","[14157023.34074761,4498236.739933394]","[14157023.34074761,4498236.739933394]","[14157032.685890839,4498237.520049699]","[14157023.34074761,4498236.739933394]","[14157033.626301805,4498237.59855357]"};
-    String[] sBcAry = { "[{minor:10, 	dist:15},{minor:7, 	dist:0.5},{minor:9, 	dist:1.2},{minor:1604,dist:16}]",
-                        "[{minor:10, 	dist:14},{minor:7, 	dist:1.5},{minor:9, 	dist:3.2},{minor:1604,dist:13}]",
-                        "[{minor:10, 	dist:13},{minor:7, 	dist:2.5},{minor:9, 	dist:4.2},{minor:1604,dist:13}]",
-                        "[{minor:10, 	dist:12},{minor:7, 	dist:3.5},{minor:9, 	dist:5.2},{minor:1604,dist:11}]",
-                        "[{minor:10, 	dist:11},{minor:7, 	dist:4.5},{minor:9, 	dist:6.2},{minor:1604,dist:11}]",
-                        "[{minor:10, 	dist:10},{minor:7, 	dist:5.5},{minor:9, 	dist:8.2},{minor:1604,dist:10}]",
-                        "[{minor:10, 	dist:9},{minor:7, 	dist:6.5},{minor:9, 	dist:8.2},{minor:1604,dist:6} ]",
-                        "[{minor:10, 	dist:8},{minor:7, 	dist:8.5},{minor:9, 	dist:10.2},{minor:1604,dist:6}]",
+    String[] sBcAry = { "[{minor:10,dist:15}, {minor:7,dist:0.5}, {minor:9,dist:1.2},  {minor:1604,dist:16}]",
+                        "[{minor:10,dist:14}, {minor:7,dist:1.5}, {minor:9,dist:3.2},  {minor:1604,dist:13}]",
+                        "[{minor:10,dist:13}, {minor:7,dist:2.5}, {minor:9,dist:4.2},  {minor:1604,dist:13}]",
+                        "[{minor:10,dist:12}, {minor:7,dist:3.5}, {minor:9,dist:5.2},  {minor:1604,dist:11}]",
+                        "[{minor:10,dist:11}, {minor:7,dist:4.5}, {minor:9,dist:6.2},  {minor:1604,dist:11}]",
+                        "[{minor:10,dist:10}, {minor:7,dist:5.5}, {minor:9,dist:8.2},  {minor:1604,dist:10}]",
+                        "[{minor:10,dist:9},  {minor:7,dist:6.5}, {minor:9,dist:8.2},  {minor:1604,dist:6} ]",
+                        "[{minor:10,dist:8},  {minor:7,dist:8.5}, {minor:9,dist:10.2}, {minor:1604,dist:6}]",
     };
     int cnt = 0;
 
@@ -286,14 +286,15 @@ public class MainActivity extends AppCompatActivity  {
                 case 0 :
                     //비콘로케이션 이벤트
                     String pos = (String) msg.obj;
-                    //mWebView.loadUrl("javascript:pointMaker(" + pos + ")");
+                    //mWebView.loadUrl("javascript:pointMarker(" + pos + ")");
                     break;
 
                 case 1 :
-                    //mWebView.loadUrl("javascript:pointMaker("+ary[(cnt++)%6]+")"); //테스트포인트
+                    //mWebView.loadUrl("javascript:pointMarker("+ary[(cnt++)%6]+")"); //테스트포인트
                     //테스트움직임
-                    mWebView.loadUrl("javascript:pointMaker(fn_bcSet("+sBcAry[(cnt++)%8]+"))");
-                    mWebView.loadUrl("javascript:pointMaker(gfn_calLatis("+sBcAry[(cnt++)%8]+"))");
+                    mWebView.loadUrl("javascript:pointMarker(fn_bcSet("+sBcAry[(cnt++)%8]+"))");//기준비콘동심원
+                    mWebView.loadUrl("javascript:pointMarker(gfn_calLatis("+sBcAry[(cnt++)%8]+"))");//포지션격자표시
+                    //mWebView.loadUrl("javascript:lineMarker(gfn_calLatis("+sBcAry[(cnt++)%8]+"))");//포지션라인으로표시
 
 //                    //타이머간격으로 비콘의 현재거리 가져오기
 //                    //List<Beacon> blist =  getBeacons();  //packet manager에 들어온것
@@ -309,7 +310,7 @@ public class MainActivity extends AppCompatActivity  {
 //                        bcAry += "]";
 //
 //                        //자바스크립트 호출
-//                        //mWebView.loadUrl("javascript:pointMaker(gfn_calLatis("+bcAry+"))");
+//                        //mWebView.loadUrl("javascript:pointMarker(gfn_calLatis("+bcAry+"))");
 //                    }
                     break;
 

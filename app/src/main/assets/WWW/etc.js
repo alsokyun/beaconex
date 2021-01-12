@@ -23,8 +23,8 @@ const refBconAry = [
 //레이어의 모든 좌표들
 let latisAry = []; //[[1,2],[1,3],[1,4]...]
 
-//현재좌표
-let cur_xy;
+
+let cur_xy;//현재좌표
 
 
 
@@ -275,7 +275,7 @@ debugger;
 	for(let i=0; i<3; i++){
 	    //동심원
 		let range = new ol.Feature({
-			geometry: new ol.geom.Circle([bcAry[i].xy[0],bcAry[i].xy[1]],bcAry[i].dist),
+			geometry: new ol.geom.Circle([bcAry[i].xy[0],bcAry[i].xy[1]], bcAry[i].dist*mod_foctor),
 		});
 		source3.addFeature(range);
 		//비콘마커
@@ -327,7 +327,6 @@ debugger;
 	else{
 		return null;
 	}
-
 
 	return cur_xy;
 
