@@ -72,17 +72,13 @@ let vectorLayer3 = new ol.layer.Vector({
 		console.log("radius - " + feature.getProperties().radius);
 		return new ol.style.Style({
 			fill: new ol.style.Fill({
-				color: 'rgba(255,255,255,0.2)'
+				color: 'rgba(0,0,255,0.1)'
 			}),
 			image: new ol.style.Circle({
 				radius: 10,
 				fill: new ol.style.Fill({
 					color: "#3399ff",
 				}),
-                //				stroke: new ol.style.Stroke({
-                //					color: '#0000ff',
-                //					width: 1
-                //				}),
 			}),
             stroke: new ol.style.Stroke({
                 color: '#0000ff',

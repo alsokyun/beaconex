@@ -4,7 +4,9 @@
 
 /// Constant
 const res_meter = 2; //path 격자단위 m
-const mod_foctor = 1.3; //비콘거리 보정factor
+const mod_foctor = 1; //비콘거리 보정 factor
+const maxRange = 30.0; //약한신호 무시 factor - 기준비콘들간의 사정거리 스케일
+
 //비콘디바이스정보
 const refBconAry = [
 	{minor:10, xy: 	[14157026.19, 4498245.31]	},//양전무
@@ -252,8 +254,6 @@ debugger;
 
 
 
-	//약한신호 무시 factor
-	let maxRange = 30.0;
 
 	//비콘영역 스케일로 필터링하고, xy 좌표추가
 	try {
@@ -275,7 +275,7 @@ debugger;
 	for(let i=0; i<3; i++){
 	    //동심원
 		let range = new ol.Feature({
-			geometry: new ol.geom.Circle([bcAry[i].xy[0],bcAry[i].xy[1]], bcAry[i].dist*mod_foctor),
+			geometry: new ol.geom.Circle([bcAry[i].xy[0],bcAry[i].xy[1]], bcAry[i].dist * mod_foctor),
 		});
 		source3.addFeature(range);
 		//비콘마커

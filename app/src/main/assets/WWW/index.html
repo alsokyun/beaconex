@@ -29,7 +29,7 @@
             height:100px;
             width:300px;
             left: 50%;
-            opacity: 0.8;
+            opacity: 0.5;
             transform: translateX(-50%);
             padding: 10px;
             text-align: center;
@@ -52,10 +52,11 @@
     <script text="javascript" src="etc.js"></script>
     <script text="javascript" src="index.js"></script>
     <script text="javascript" >
+        //테스트 비콘로깅
         let fn_bcSet = function(bcAry){
             let html = "";
             $.each(bcAry, function(idx, bc){
-                html += "minor:" + bc.minor + ", dist: " + bc.dist + "<br>";
+                html += "minor:" + bc.minor + ", dist: " + bc.dist + " m<br>";
             });
             $("#bcSet").html(html);
         }
