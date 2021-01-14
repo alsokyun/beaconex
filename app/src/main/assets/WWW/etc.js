@@ -4,22 +4,28 @@
 
 /// Constant
 const res_meter = 2; //path 격자단위 m
-const mod_foctor = 1; //비콘거리 보정 factor
+const mod_foctor = 1.3; //비콘거리 보정 factor
 const maxRange = 30.0; //약한신호 무시 factor - 기준비콘들간의 사정거리 스케일
 
 //비콘디바이스정보
-const refBconAry = [
-	{minor:10, xy: 	[14157026.19, 4498245.31]	},//양전무
-	{minor:7, xy: 	[14157047.34, 4498248.11]	},//김영선
-	{minor:9, xy: 	[14157047.34, 4498238.30]	},//회의실
-	{minor:1604, xy:[14157027.30, 4498236.90]	},//김연희
-];
+//const refBconAry = [
+//	{minor:10, xy: 	[14157026.19, 4498245.31]	},//양전무
+//	{minor:7, xy: 	[14157047.34, 4498248.11]	},//김영선
+//	{minor:9, xy: 	[14157047.34, 4498238.30]	},//회의실
+//	{minor:1604, xy:[14157027.30, 4498236.90]	},//김연희
+//];
 //const refBconAry = [
 //	{minor:10, xy: [127.17473, 37.42309]},//양전무
 //	{minor:7, xy: [127.17492, 37.42311]},//김영선
 //	{minor:9, xy: [127.17492, 37.42304]},//회의실
 //	{minor:1604, xy: [127.17474, 37.42303]},//김연희
 //];
+const refBconAry = [
+	{minor:10, xy: 	[14157028.47262817, 4498242.357009937]	},//양전무
+	{minor:7, xy: 	[14157040.826464284, 4498243.402047433]	},//김영선
+	{minor:9, xy: 	[14157041.199691962, 4498237.430404599]	},//회의실
+	{minor:1604, xy:[14157028.733887544, 4498236.497335406]	},//김연희
+];
 
 
 //레이어의 모든 좌표들
@@ -391,7 +397,7 @@ let gfn_dist = function(xy, xy2){
 let gfn_hasAry = function(ary, xy){
 	let ret = false;
 	$.each(ary, function(idx, val){
-		if(Math.round(val[0]) == Math.round(xy[0]) && Math.round(val[1]) == Math.round(xy[1])){
+		if(Math.round(val[0],2) == Math.round(xy[0],2) && Math.round(val[1],2) == Math.round(xy[1],2)){
 			ret = true;
 			return false;
 		}

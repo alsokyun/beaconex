@@ -404,7 +404,7 @@ $(document).ready(function() {
 	initMap();
 
 	//격자불러오기
-	gfn_loadFile("dr_path.geojson", function(text){
+	gfn_loadFile("dr_path_4.geojson", function(text){
 		let drawVector_Ary = JSON.parse(text);;
 
 		latisAry = [];
@@ -441,7 +441,7 @@ $(document).ready(function() {
 	//저장된 Path 로딩
 	$("#btn4").click(function(){
 
-        gfn_loadFile("dr_path.geojson", function(text){
+        gfn_loadFile("dr_path_4.geojson", function(text){
             let drawVector_Ary = JSON.parse(text);;
 
             //라인스트링 표시
