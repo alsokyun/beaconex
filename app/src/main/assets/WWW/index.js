@@ -15,12 +15,6 @@ ol.proj.proj4.register(proj4);
 
 
 
-//이미지레이어범위
-//let projExtent = [14157005.425914, 4498212.914733]; //3857
-//let projExtent = [14157005.425914, 4498212.914733, 14157071.006190, 4498255.665878]; //3857
-// let projExtent = [2.22, 0.65, 127.175741, 37.423578]; //27700
-//let projExtent = [127.175111, 37.423295, 127.175741, 37.423578]; //4326
-let projExtent = [127.17467, 37.423025, 127.17493, 37.423105]; //4326
 
 
 
@@ -107,7 +101,7 @@ let rasterLayer = new ol.layer.Tile({
 //사무실이미지 레이어
 let imgSource = new ol.source.ImageStatic({
 	url:
-	  'dr_off.png',
+	  'dr_off_4.png',
 	crossOrigin: 'anonymous',
 	projection: rotateProjection("EPSG:4326", Math.PI / 180*(-4), projExtent),
 	imageExtent: projExtent,
