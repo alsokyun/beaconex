@@ -44,8 +44,8 @@ public class IndoorPositioning implements LocationProvider, BeaconUpdateListener
     private double maximumMovementSpeed = MAXIMUM_MOVEMENT_SPEED_NOT_SET;
     private double rootMeanSquareThreshold = ROOT_MEAN_SQUARE_THRESHOLD_LIGHT;
     //private double rootMeanSquareThreshold = ROOT_MEAN_SQUARE_THRESHOLD_MEDIUM;  //yskim
-    //private int minimumRssiThreshold = -70;
-    private int minimumRssiThreshold = -80;  //yskim
+    private int minimumRssiThreshold = -70;
+    //private int minimumRssiThreshold = -90;  //yskim
 
 
     private static volatile IndoorPositioning instance;
@@ -92,8 +92,8 @@ public class IndoorPositioning implements LocationProvider, BeaconUpdateListener
     private void updateLocation() {
         List<Beacon> usableBeacons = getUsableBeacons(BeaconManager.getInstance().getBeaconMap().values());
 
+        System.out.print("< yskim > usableBeacons size : "+usableBeacons.size() +"\n");
         if (usableBeacons.size() < MINIMUM_BEACON_COUNT) {
-            System.out.print("< yskim MINIMUM_BEACON_COUNT : "+usableBeacons.size() +"\n");
             return;
         } else if (usableBeacons.size() > MINIMUM_BEACON_COUNT) {
             Collections.sort(usableBeacons, BeaconUtil.DescendingRssiComparator);
@@ -120,8 +120,9 @@ public class IndoorPositioning implements LocationProvider, BeaconUpdateListener
             if (multilateration.getRMS() < rootMeanSquareThreshold) {
                 locationPredictor.addLocation(location);
                 System.out.print("yskim onLocationUpdated after : "+multilateration.getRMS() +"\n");
-                onLocationUpdated(location);
+                //onLocationUpdated(location);
             }
+            onLocationUpdated(location);
         } catch (TooManyEvaluationsException e) {
             // see https://github.com/neXenio/BLE-Indoor-Positioning/issues/73
         }

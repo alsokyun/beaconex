@@ -156,6 +156,20 @@ public abstract class BeaconUtil {
         return beaconClass.getSimpleName();
     }
 
+
+    /**
+     * Used to sort beacons from highest rssi to lowest rssi.
+     */
+    public static Comparator<Beacon> revDescendingRssiComparator = new Comparator<Beacon>() {
+        public int compare(Beacon firstBeacon, Beacon secondBeacon) {
+            if (firstBeacon.equals(secondBeacon)) {
+                return 0;
+            }
+            return Integer.compare(secondBeacon.revrssi, firstBeacon.revrssi);
+        }
+    };
+
+
     /**
      * Used to sort beacons from highest rssi to lowest rssi.
      */

@@ -19,11 +19,11 @@ public abstract class BeaconDistanceCalculator {
     public static final float PATH_LOSS_PARAMETER_INDOOR = 1.7f;
     public static final float PATH_LOSS_PARAMETER_OFFICE_HARD_PARTITION = 3f;
 
-    public static final int CALIBRATED_RSSI_AT_ONE_METER = -62;
-    //public static final int CALIBRATED_RSSI_AT_ONE_METER = -77;  //yskim
-    public static final int SIGNAL_LOSS_AT_ONE_METER = -41;
-    //public static final int SIGNAL_LOSS_AT_ONE_METER = -60; //yskim
-    //public static final int CALIBRATED_RSSI_AT_ONE_METER = -100;
+    //public static final int CALIBRATED_RSSI_AT_ONE_METER = -62;
+    //public static final int SIGNAL_LOSS_AT_ONE_METER = -41;
+   public static final int CALIBRATED_RSSI_AT_ONE_METER = -59;  //yskim hycon
+    public static final int SIGNAL_LOSS_AT_ONE_METER = -24; //yskim
+
 
     //private static float pathLossParameter = PATH_LOSS_PARAMETER_OFFICE_HARD_PARTITION;
     private static float pathLossParameter =PATH_LOSS_PARAMETER_INDOOR; //yskim
@@ -105,6 +105,21 @@ public abstract class BeaconDistanceCalculator {
      */
     public static float calculateDistance(float rssi, float calibratedRssi, float pathLossParameter) {
         return (float) Math.pow(10, (calibratedRssi - rssi) / (10 * pathLossParameter));
+/*
+        if (rssi == 0) {
+            return -1.0f; // if we cannot determine distance, return -1.
+        }
+
+        double ratio = rssi*1.0/calibratedRssi;
+        if (ratio < 1.0) {
+            return (float) Math.pow(ratio,10);
+        }
+        else {
+            float accuracy = (float) ((0.89976)*Math.pow(ratio,7.7095) + 0.111);
+            return accuracy;
+        }
+
+ */
     }
 
     public static void setPathLossParameter(float pathLossParameter) {

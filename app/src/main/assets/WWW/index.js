@@ -124,6 +124,7 @@ let modify;
 //지도초기화
 let initMap = function(){
 
+
 	//브이월드 WMTS 타일맵
 	gfn_loadFile("WMTSCapabilities.xml", function(text){
 		let result = parser.read(text);
@@ -171,6 +172,8 @@ let initMap = function(){
 		fn_layer_Img();
 
 
+
+
 		// moveMaker([127.17487910037713,37.42310490165161]);
         //		moveMaker([127.17487106339897,37.42309890571249	]);
         //		moveMaker([127.17488319176584,37.4230935143468  ]);
@@ -191,10 +194,26 @@ let initMap = function(){
 	});
 
 
-
-
 }
 
+
+
+
+
+
+var	arr_points=[];
+ let point_Clear = function(){
+
+for(var i=0, len=arr_points.length; i<len; i++){
+    //put your code here
+    source1.removeFeature(arr_points[i]);
+    }
+
+    while(arr_points.length > 0) {
+        arr_points.pop();
+    }
+    arr_points.length=0;
+ }
 
 // 포인트 표시
  let pointMaker = function(cord){
@@ -205,7 +224,9 @@ let initMap = function(){
  		geometry: new ol.geom.Point(cord),
  	  });
 
+
 /*
+user maker
 var iconBlue = new ol.style.Style({
       image: new ol.style.Icon({
        anchor: [0.5, 1],
@@ -215,27 +236,161 @@ var iconBlue = new ol.style.Style({
       })
     });
     marker.setStyle(iconBlue);
-*/
+
  	marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
 
  	try{
  	 	source1.removeFeature(pre_marker);
  	}catch(e){}
+*/
+//point
+var myStyle = new ol.style.Style({
+      image: new ol.style.Circle({
+        radius: 3,
+        fill: new ol.style.Fill({ color: [255, 255, 200, 1]}),
+        stroke: new ol.style.Stroke({
+          color: [255,0,0], width: 1
+        })
+      })
+    })
+marker.setStyle(myStyle);
 
+marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
+    arr_points.push(marker);
 	source1.addFeature(marker);
 
  	pre_marker = marker;
- 	//alert(1);
+ 	//alert(1);ol.proj.METERS_PER_UNIT.m
 
  }
 
+
+
+var	circle_marker1;
+var	circle_marker2;
+var	circle_marker3;
+var	circle_marker4;
+var	circle_marker5;
+var	circle_marker6;
+
 // 포인트 표시
-let pointMaker2 = function(cord){
+let pointMaker2 = function(idx,cord,max,dist){
+    console.log("pointMaker2 .. " +idx +"    "+cord+"    "+max+"    "+dist+"\n");
+ var view = map.getView();
+    var projection = view.getProjection();
+    var resolutionAtEquator = view.getResolution();
+    var center = view.getCenter();
+    var pointResolution = ol.proj.getPointResolution(projection, resolutionAtEquator, center);
+    var resolutionFactor = resolutionAtEquator/pointResolution;
+    //var radius = (radius / ol.proj.METERS_PER_UNIT.m) * resolutionFactor;
+    var radius = (dist / 130000) * resolutionFactor;
+
+	// convert the generated point to a OpenLayers feature
+	let marker = new ol.Feature({
+		//geometry: new ol.geom.Point(cord),
+		geometry: new ol.geom.Circle(cord,radius),
+
+            });
+/*
+var iconBlue = new ol.style.Style({
+      image: new ol.style.Circle({
+               radius: 5,
+               fill: null,
+               stroke: new ol.style.Stroke({
+                   color: 'rgba(255,0,0,0.9)',
+                   width: 3
+               })
+      })
+    });
+    */
+
+        var stroke = new ol.style.Stroke({
+    	          color: 'rgba(255,0,0,0.9)',
+    	          width: 3
+    	    });
+
+    	    var style = new ol.style.Style({
+              stroke: stroke,
+              image: new ol.style.Circle({
+                radius: 100,
+                stroke: stroke,
+              }),
+               text: new ol.style.Text({
+                        text:idx.toString()+"  "+ dist.toString(),
+                      font: '18px Calibri,sans-serif',
+                      fill: new ol.style.Fill({ color: '#0f0' }),
+                      stroke: new ol.style.Stroke({
+                        color: '#f00', width: 2
+                      }),
+                      // get the text from the feature - `this` is ol.Feature
+                      // and show only under certain resolution
+                      //text: map.getView().getZoom() > 12 ? this.get('description') : ''
+                    })
+            });
+
+    marker.setStyle(style);
+
+/*
+ var iconBlue = new ol.style.Style({
+      image: new ol.style.Icon({
+        anchor: [0.5, 1],
+        opacity: 1,
+        src: './img/beacon_icon.png'
+
+      })
+    });
+    marker.setStyle(iconBlue);
+*/
+
+try{
+       if(idx=="1"){
+            source1.removeFeature(circle_marker1);
+        }else if(idx=="2"){
+            source1.removeFeature(circle_marker2);
+        }else if(idx=="3"){
+            source1.removeFeature(circle_marker3);
+        }else if(idx=="4"){
+            source1.removeFeature(circle_marker4);
+        }
+        else if(idx=="5"){
+            source1.removeFeature(circle_marker5);
+        }
+        else if(idx=="6"){
+            source1.removeFeature(circle_marker6);
+        }
+ 	}catch(e){}
+
+	marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
+
+	source1.addFeature(marker);
+
+    if(idx=="1"){
+        circle_marker1=marker;
+    }else if(idx=="2"){
+        circle_marker2=marker;
+    }else if(idx=="3"){
+        circle_marker3=marker;
+    }else if(idx=="4"){
+            circle_marker4=marker;
+    }else if(idx=="5"){
+        circle_marker5=marker;
+    }else if(idx=="6"){
+        circle_marker6=marker;
+    }
+
+	//pre_marker = marker;
+	//alert(1);
+
+}
+
+
+let circleMaker2 = function(cord,length){
     console.log("pointMaker2 .. " + cord);
 
 	// convert the generated point to a OpenLayers feature
 	let marker = new ol.Feature({
-		geometry: new ol.geom.Point(cord),
+		//geometry: new ol.geom.Point(cord),
+		geometry: new ol.geom.Circle(cord,length),
 
             });
 /*
@@ -256,7 +411,6 @@ let pointMaker2 = function(cord){
 	//alert(1);
 
 }
-
 
 
 
@@ -412,6 +566,11 @@ $(document).ready(function() {
 	$("#btn2").click(function(){
 		rot_Ang(30);
 	});
+
+
+	$("#btn5").click(function(){
+    		point_Clear();
+    	});
 
 
 });

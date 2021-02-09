@@ -7,11 +7,16 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
+import com.example.bcon.MainActivity;
 import com.nexenio.bleindoorpositioning.ble.advertising.AdvertisingPacket;
+import com.nexenio.bleindoorpositioning.ble.advertising.IBeaconAdvertisingPacket;
 import com.nexenio.bleindoorpositioning.ble.beacon.Beacon;
 import com.nexenio.bleindoorpositioning.ble.beacon.BeaconManager;
+import com.nexenio.bleindoorpositioning.ble.beacon.BeaconUtil;
 import com.nexenio.bleindoorpositioning.ble.beacon.IBeacon;
+import com.nexenio.bleindoorpositioning.ble.beacon.filter.BeaconFilter;
 import com.nexenio.bleindoorpositioning.location.Location;
+import com.nexenio.bleindoorpositioning.location.multilateration.Multilateration;
 import com.nexenio.bleindoorpositioning.location.provider.IBeaconLocationProvider;
 
 import com.polidea.rxandroidble.RxBleClient;
@@ -19,8 +24,23 @@ import com.polidea.rxandroidble.scan.ScanResult;
 import com.polidea.rxandroidble.scan.ScanSettings;
 
 import androidx.annotation.NonNull;
+
+import org.apache.commons.math3.exception.TooManyEvaluationsException;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
 import rx.Observer;
 import rx.Subscription;
+
+import static com.nexenio.bleindoorpositioning.IndoorPositioning.getUsableBeacons;
 
 /**
  * Created by steppschuh on 24.11.17.
@@ -51,7 +71,7 @@ public class BluetoothClient {
         }
         return instance;
     }
-
+    ExampleThread thread;
     public static void initialize(@NonNull Context context) {
         Log.v(TAG, "Initializing with context: " + context);
         BluetoothClient instance = getInstance();
@@ -61,7 +81,193 @@ public class BluetoothClient {
         if (instance.bluetoothAdapter == null) {
             Log.e(TAG, "Bluetooth adapter is not available");
         }
+
+       // ExampleThread thread = new ExampleThread();  //yskim
+      //  thread.start();
     }
+
+    public static class ExampleThread extends Thread {
+        private static final String TAG = "ExampleThread";
+
+        public ExampleThread() {
+            // 초기화 작업 } public void run() { // 스레드에게 수행시킬 동작들 구현 }
+        }
+        public void run()
+        {
+            int second = 0;
+            while (true) {
+
+
+                try{
+                    AdvertisingPacket latestAdvertisingPacket;
+                    //List<String> inactiveBeaconKeys = new ArrayList<>();
+                    //float beacon_arr[]=new float[BeaconManager.beaconMap.size()];
+                    //int idx=0;
+                    Map<Beacon, Float> testMap = new HashMap<Beacon,Float>();
+
+                    for (Iterator<Map.Entry<String, Beacon>> beaconMapIterator = BeaconManager.beaconMap.entrySet().iterator(); beaconMapIterator.hasNext(); ) {
+
+                        Map.Entry<String, Beacon> beaconEntry = beaconMapIterator.next();
+                        latestAdvertisingPacket = beaconEntry.getValue().getLatestAdvertisingPacket();
+                        Beacon bc=beaconEntry.getValue();
+
+                        // 스레드에게 수행시킬 동작들 구현
+
+                        if (((IBeacon) bc).getMinor() == 5) {
+
+                            ArrayList<IBeaconAdvertisingPacket> advertisingPackets = ((IBeacon) bc).getAdvertisingPackets();
+
+                            double tvalue=0,max=0, min=0;
+                            int removecount=3;
+                            int remove_persent=30;
+                            int size=advertisingPackets.size();
+                            float arr[]=new float[size];
+
+                            int remove_cnt=(int) (((float)remove_persent/100)*advertisingPackets.size());
+
+
+                            if(advertisingPackets.size()>10)
+                            {
+                                for (int i = 0; i < advertisingPackets.size(); i++) {
+                                    IBeaconAdvertisingPacket b = advertisingPackets.get(i);
+                                    arr[i]=b.getRssi();
+
+                                    System.out.print("yskim processScanResult ok Minor 1 value : " + b.getRssi() + "\n");
+
+                                    tvalue+=b.getRssi();
+                                }
+
+                                Arrays.sort(arr);
+
+
+                                double caltvalue=0;
+
+                                for(int i=(remove_cnt);i<(arr.length-remove_cnt);i++)
+                                {
+                                    caltvalue+=arr[i];
+                                }
+                                float revaverage=(float)(caltvalue/(arr.length-(remove_cnt*2)));
+                                float revdist= (float) Math.pow(10, (-59 - revaverage ) / (10 * 1.7f));
+
+                                System.out.print("yskim processScanResult ok Minor 1 max  : " + arr[0]+ "    min  : " + arr[size-1]+ "\n");
+                                System.out.print("yskim processScanResult ok Minor 1 average : "+tvalue/advertisingPackets.size()+"    last dist : " +  bc.getDistance() + "\n");
+                                System.out.print("yskim processScanResult ok Minor 1 rev average : " + revaverage +"   rev dist :"+revdist + "\n");
+                                System.out.print("yskim processScanResult ok Minor 1 beacon  revdist: " + bc.getRevdistance()+"   revrssi :"+bc.getRevrssi() + "\n");
+                                System.out.print("yskim processScanResult ok Minor 1 : >>>>>>>>>>>>>>>>>>>>>\n");
+                            }
+                        }  //minor filter
+
+                        ((IBeacon) bc).trimAdvertisingPackets(); //시간이 지난것들은 지우고
+                        ((IBeacon) bc).calculateRssiAverage();
+
+
+
+                        if(bc.getRevdistance()>0)
+                        {
+                            testMap.put(bc,bc.getRevdistance());
+                        }
+
+                        //if (((IBeacon) bc).getMinor() == 7)
+                        System.out.print("yskim processScanResult ok Minor 1 minor : "+((IBeacon) bc).getMinor()+"   size : "+((IBeacon) bc).getAdvertisingPackets().size()+"    beacon  revdist: " + bc.getRevdistance()+"    actual : "+bc.getActualdistance()+"   revrssi :"+bc.getRevrssi() +"   max :"+bc.getRevmax() +"   min :"+bc.getRevmin() + "\n");
+
+                    }
+
+                    //Object[] mapkey = testMap.keySet().toArray();
+                    //Arrays.sort(mapkey);
+
+                    List<Beacon> keySetList = new ArrayList<>(testMap.keySet());
+
+                    // 오름차순
+                    System.out.println("------value 오름차순------");
+
+                    Collections.sort(keySetList, (o1, o2) -> (testMap.get(o1).compareTo(testMap.get(o2))));
+
+
+                    for(Beacon key : keySetList) {
+                        System.out.println("yskim processScanResult ok Minor 1 sort : key : " + ((IBeacon)key).getMinor() +"   "+ ((IBeacon)key).getLocation()+" / " + "value : " + testMap.get(key));
+                    }
+
+
+
+
+
+
+                    //내비콘인지 uuid
+                    //가까운 3개를 추가한다.
+                    //List<Beacon> usableBeacons=getUsableBeacons(BeaconManager.getInstance().getBeaconMap().values());
+
+
+                    List<Beacon> usableBeacons = new ArrayList<>();
+                    for(int i=0;i<keySetList.size();i++)
+                    {
+                        if(keySetList.get(i).getLocation().getLatitude()>0)
+                        {
+                            System.out.println("yskim processScanResult ok Minor 1 add minor : " + ((IBeacon)keySetList.get(i)).getMinor() +"   dist "+ ((IBeacon)keySetList.get(i)).getRevdistance()+"    max : " +((IBeacon)keySetList.get(i)).getRevmax()+"    min : " +((IBeacon)keySetList.get(i)).getRevmin());
+                            usableBeacons.add(keySetList.get(i));
+                        }
+                    }
+
+                    //System.out.print("yskim processScanResult ok Minor 1 add : ===========================\n");
+
+
+
+                    if (usableBeacons.size() < 3) {
+                        Thread.sleep(1000);
+                        continue;
+                    } else if (usableBeacons.size() > 3) {
+                        Collections.sort(usableBeacons, BeaconUtil.revDescendingRssiComparator);
+                        int maximumBeaconIndex = Math.min(10, usableBeacons.size());
+                        int firstRemovableBeaconIndex = maximumBeaconIndex;
+                        for (int beaconIndex = 3; beaconIndex < maximumBeaconIndex; beaconIndex++) {
+                            if (usableBeacons.get(beaconIndex).getFilteredRssi() < -70) {
+                                firstRemovableBeaconIndex = beaconIndex;
+                                break;
+                            }
+                        }
+                        usableBeacons.subList(firstRemovableBeaconIndex, usableBeacons.size()).clear();
+                    }
+
+                    Multilateration multilateration = new Multilateration(usableBeacons);
+
+                    try {
+                        Location location = multilateration.getLocation();
+
+                        // The root mean square of multilateration is used to filter out inaccurate locations.
+                        // Adjust value to allow location updates with higher deviation
+
+                        System.out.print("yskim processScanResult ok Minor 1 add location : "+location.getLongitude()+","+location.getLatitude()+"    RMS : "+multilateration.getRMS() +"\n");
+                        System.out.print("yskim processScanResult ok Minor 1 add : ===========================\n");
+                        //MainActivity.displaylocation(location);
+                        //locationListener.onLocationUpdated(this, location);
+
+                        /*
+                        if (multilateration.getRMS() < rootMeanSquareThreshold) {
+                            locationPredictor.addLocation(location);
+                            System.out.print("yskim onLocationUpdated after : "+multilateration.getRMS() +"\n");
+                            //onLocationUpdated(location);
+                        }
+                        onLocationUpdated(location);
+                        */
+                    } catch (TooManyEvaluationsException e) {
+                        // see https://github.com/neXenio/BLE-Indoor-Positioning/issues/73
+                    }
+
+
+                    Thread.sleep(1000);
+
+                }catch (InterruptedException e) {
+                    e.printStackTrace(); ;
+                } Log.i("경과된 시간 : ", Integer.toString(second));
+
+            }
+        }
+    }
+
+
+
+
+
+
 
     public static void startScanning() {
         if (isScanning()) {
@@ -134,10 +340,28 @@ public class BluetoothClient {
             Log.d(TAG, "yskim processScanResult : "+((IBeacon) beacon).getMinor()+"  "+scanResult.getBleDevice().getBluetoothDevice().getName()+"   "+ scanResult.getRssi());
 
             if (beacon instanceof IBeacon && !beacon.hasLocation()) {
+                //Log.d(TAG, "yskim processScanResult : "+((IBeacon) beacon).getMinor()+"  "+scanResult.getBleDevice().getBluetoothDevice().getName()+"   "+ scanResult.getRssi());
                 beacon.setLocationProvider(createDebuggingLocationProvider((IBeacon) beacon));
             }
             else{
-                System.out.print("yskim processScanResult ok "+((IBeacon) beacon).getMinor()+"  "+scanResult.getBleDevice().getBluetoothDevice().getName()+"   "+ scanResult.getRssi()+"\n");
+               // System.out.print("yskim lo point >>"+location.getLongitude()+","+location.getLatitude()+"   "+location.getAccuracy()+"\n");
+
+                /*
+                if(((IBeacon) beacon).getMinor()==1)
+                {
+                    ArrayList<IBeaconAdvertisingPacket> advertisingPackets=((IBeacon) beacon).getAdvertisingPackets();
+                    for(int i=0;i<advertisingPackets.size();i++)
+                    {
+                        IBeaconAdvertisingPacket b=advertisingPackets.get(i);
+                        System.out.print("yskim processScanResult ok Minor 1 : "+b.getRssi()+"\n");
+
+                    }
+                    System.out.print("yskim processScanResult ok Minor 1 : >>>>>>>>>>>>>>>>>>>>>\n");
+                }
+                */
+
+
+                //System.out.print("yskim processScanResult ok Minor 22: "+((IBeacon) beacon).getMinor()+"   rssi : "+ scanResult.getRssi()+"    dist : "+((IBeacon) beacon).getDistance()+"\n");
             }
         }
         else {
@@ -158,146 +382,85 @@ public class BluetoothClient {
 */
 
         switch (iBeacon.getMinor()) {
-            case 10: {
+
+            //case 10: {
+            case 1: {
                 //yskim //기둥1
                 //37.42028047335332985, 127.17682909002513725
                 //beaconLocation.setLatitude(52.512423);
                 //beaconLocation.setLongitude(13.390693);
                 //beaconLocation.setAltitude(36);
                 //37.42029044723202702,127.17699209169984442
-                beaconLocation.setLatitude(37.42309);
-                beaconLocation.setLongitude(127.17473);
+                beaconLocation.setLatitude(37.423032499343236);
+                beaconLocation.setLongitude(127.17487241030128);
                 beaconLocation.setElevation(1);
                 beaconLocation.setAltitude(0);
                 break;
             }
-            case 9: {
+            case 6: {  //2번대신
                 //yskim //기둥2
 
                 //37.42020695161892974 127.17699608125133182
                 //beaconLocation.setLatitude(52.512393);
                 //beaconLocation.setLongitude(13.390692);
                 //beaconLocation.setAltitude(36);
-                beaconLocation.setLatitude(37.42304);
-                beaconLocation.setLongitude(127.17492);
+                beaconLocation.setLatitude(37.423071906756235);
+                beaconLocation.setLongitude(127.17486939281615);
                 beaconLocation.setElevation(1);
                 beaconLocation.setAltitude(0);
                 break;
             }
 
-            case 7: {
+            case 5: {
+                //가운데것
+                beaconLocation.setLatitude(37.42306698);
+                beaconLocation.setLongitude(127.1748097);
+                beaconLocation.setElevation(1);
+                beaconLocation.setAltitude(0);
+                break;
+            }
+
+            case 2: {
+                //가운데것
+                beaconLocation.setLatitude(37.42302797);
+                beaconLocation.setLongitude(127.1748136);
+                beaconLocation.setElevation(1);
+                beaconLocation.setAltitude(0);
+                break;
+            }
+
+            case 3: {
                 //yskim  //기둥3
                 //37.42019754767616035,127.17683336454457788
                 //beaconLocation.setLatitude(52.512419);
                 //beaconLocation.setLongitude(13.390825);
                 //beaconLocation.setAltitude(36);
                 //37.42028047335332985 127.17682909002513725
-                beaconLocation.setLatitude(37.42311);
-                beaconLocation.setLongitude(127.17492);
+                beaconLocation.setLatitude(37.42302344628594);
+                beaconLocation.setLongitude(127.17475472838073);
                 beaconLocation.setElevation(1);
                 beaconLocation.setAltitude(0);
                 break;
             }
 
 
-            case 1604: {
+            case 4: {
                 //yskim  //기둥4
                 //beaconLocation.setLatitude(52.51241);
                 //beaconLocation.setLongitude(13.390822);
                 //beaconLocation.setAltitude(36);
                 //yskim  //기둥4
                 //37.42019754767616035 127.17683336454457788
-                beaconLocation.setLatitude(37.42303);
-                beaconLocation.setLongitude(127.17474);
+                beaconLocation.setLatitude(37.42306205490493);
+                beaconLocation.setLongitude(127.17475003451499);
                 beaconLocation.setElevation(1);
                 beaconLocation.setAltitude(0);
                 break;
             }
 
 //////////////////////////////////////////////////////////////////////////
-            case 1: {
-                beaconLocation.setLatitude(52.512437);
-                beaconLocation.setLongitude(13.391124);
-                beaconLocation.setAltitude(36);
-                break;
-            }
-            case 2: {
-                beaconLocation.setLatitude(52.512411788476356);
-                beaconLocation.setLongitude(13.390875654442985);
-                beaconLocation.setElevation(2.65);
-                beaconLocation.setAltitude(36);
-                break;
-            }
-            case 3: {
-                beaconLocation.setLatitude(52.51240486636751);
-                beaconLocation.setLongitude(13.390770270005437);
-                beaconLocation.setElevation(2.65);
-                beaconLocation.setAltitude(36);
-                break;
-            }
-            case 4: {
-                beaconLocation.setLatitude(52.512426);
-                beaconLocation.setLongitude(13.390887);
-                beaconLocation.setElevation(2);
-                beaconLocation.setAltitude(36);
-                break;
-            }
-            case 5: {
-                beaconLocation.setLatitude(52.512347534813834);
-                beaconLocation.setLongitude(13.390780437281524);
-                beaconLocation.setElevation(2.9);
-                beaconLocation.setAltitude(36);
-                break;
-            }
-            case 12: {
-                beaconLocation.setLatitude(52.51239708899507);
-                beaconLocation.setLongitude(13.390878261276518);
-                beaconLocation.setElevation(2.65);
-                beaconLocation.setAltitude(36);
-                break;
-            }
-            case 13: {
-                beaconLocation.setLatitude(52.51242692608082);
-                beaconLocation.setLongitude(13.390872969910035);
-                beaconLocation.setElevation(2.65);
-                beaconLocation.setAltitude(36);
-                break;
-            }
-            case 14: {
-                beaconLocation.setLatitude(52.51240825552749);
-                beaconLocation.setLongitude(13.390821867681456);
-                beaconLocation.setElevation(2.65);
-                beaconLocation.setAltitude(36);
-                break;
-            }
-            case 15: {
-                beaconLocation.setLatitude(52.51240194910502);
-                beaconLocation.setLongitude(13.390725856632926);
-                beaconLocation.setElevation(2.65);
-                beaconLocation.setAltitude(36);
-                break;
-            }
-            case 16: {
-                beaconLocation.setLatitude(52.512390301005595);
-                beaconLocation.setLongitude(13.39077285305359);
-                beaconLocation.setElevation(2.65);
-                beaconLocation.setAltitude(36);
-                break;
-            }
-            case 17: {
-                beaconLocation.setLatitude(52.51241817994876);
-                beaconLocation.setLongitude(13.390767908948872);
-                beaconLocation.setElevation(2.65);
-                beaconLocation.setAltitude(36);
-                break;
-            }
-            case 18: {
-                beaconLocation.setLatitude(52.51241494408066);
-                beaconLocation.setLongitude(13.390923696709294);
-                beaconLocation.setElevation(2.65);
-                beaconLocation.setAltitude(36);
-                break;
-            }
+
+
         }
         return new IBeaconLocationProvider<IBeacon>(iBeacon) {
             @Override

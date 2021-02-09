@@ -13,6 +13,7 @@ import com.nexenio.bleindoorpositioning.location.provider.BeaconLocationProvider
 import com.nexenio.bleindoorpositioning.location.provider.LocationProvider;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -23,8 +24,12 @@ import java.util.concurrent.TimeUnit;
 
 public abstract class Beacon<P extends AdvertisingPacket> {
 
-    public static final long MAXIMUM_PACKET_AGE = TimeUnit.SECONDS.toMillis(60);
-    //public static final long MAXIMUM_PACKET_AGE = TimeUnit.SECONDS.toMillis(5);  //yskim
+    //public static final long MAXIMUM_PACKET_AGE = TimeUnit.SECONDS.toMillis(60);
+    public static final long MAXIMUM_PACKET_AGE = TimeUnit.SECONDS.toMillis(10);  //yskim
+    public static final int MIN_PACKET_BUFFER_SIZE=6; //yskim
+    public static final int MIN_PACKET_READ_BUFFER_SIZE=4; //yskim
+    public static final int MAX_RSSI=-80; //yskim
+    public static final int MIN_RSSI=-45; //yskim
 
     protected String macAddress;
     protected int rssi; // in dBm
@@ -34,7 +39,18 @@ public abstract class Beacon<P extends AdvertisingPacket> {
     protected float distance; // in m
     protected boolean shouldUpdateDistance = true;
     protected final ArrayList<P> advertisingPackets = new ArrayList<>();
+    protected final ArrayList<P> yskimadvertisingPackets = new ArrayList<>();
+
     protected BeaconLocationProvider<? extends Beacon> locationProvider;
+
+    //yskim
+    protected float revdistance;//yskim
+    protected int revrssi;//yskim
+    protected float revmax; //yskim
+    protected float revmin; //yskim
+    protected int remove_persent=10;//(%)
+    protected double remove_actualdistance;
+
 
     public Beacon() {
         this.locationProvider = createLocationProvider();
@@ -134,14 +150,151 @@ public abstract class Beacon<P extends AdvertisingPacket> {
                 return;
             }
 
-            advertisingPackets.add(advertisingPacket);
+
+            if(advertisingPacket.getRssi()<=MIN_RSSI && advertisingPacket.getRssi()>=MAX_RSSI) {
+                try{
+                    advertisingPackets.add(advertisingPacket);
+
+                    P yskimpacket=advertisingPacket;
+
+                    System.out.print("kalman before : " + advertisingPacket.getRssi() + "\n");
+
+                    float filteredRssi = createSuggestedWindowFilter().filter(this);
+
+                    yskimpacket.setRssi((int) filteredRssi);
+
+                    System.out.print("kalman before 2: " + advertisingPacket.getRssi() + "\n");
+
+                    yskimadvertisingPackets.add(yskimpacket);
+
+                    System.out.print("kalman before >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+                }catch (Exception e){}
+            }
+
+            if(advertisingPackets.size()>(MIN_PACKET_BUFFER_SIZE+1))
+            {
+                //remove max
+                advertisingPackets.remove(0);
+                yskimadvertisingPackets.remove(0);
+            }
             trimAdvertisingPackets();
             invalidateDistance();
+            //calculateRssiAverage(); //yskim  신호가 안들어오면 스톱되어 버리네
         }
     }
 
+
+    public int getRevrssi()
+    {
+        return revrssi;
+    }
+
+    public float getRevdistance()
+    {
+        return revdistance;
+    }
+
+    public float getRevmin()
+    {
+        return revmin;
+    }
+
+
+    public float getRevmax()
+    {
+        return revmax;
+    }
+
+    public double getActualdistance()
+    {
+        return remove_actualdistance;
+    }
+
+
+
+
+    public void calculateRssiAverage()
+    {
+       // ArrayList<IBeaconAdvertisingPacket> advertisingPackets = ((IBeacon) this).getAdvertisingPackets();
+
+
+        if(yskimadvertisingPackets.size()>=MIN_PACKET_READ_BUFFER_SIZE) {
+
+            int remove_cnt=(int) (((float)remove_persent/100)*yskimadvertisingPackets.size());
+            float tvalue=0,max=0, min=0;
+            //int removecount=3;
+            int size=yskimadvertisingPackets.size();
+            float arr[]=new float[size];
+
+
+            for (int i = 0; i < yskimadvertisingPackets.size(); i++) {
+                arr[i]=yskimadvertisingPackets.get(i).getRssi();
+            }
+
+            Arrays.sort(arr);
+
+            double caltvalue=0;
+            //protected int remove_top=3;
+            //protected int remove_low=5;
+            //for(int i=(remove_top);i<(arr.length-remove_low);i++)
+            for(int i=(remove_cnt);i<(arr.length-remove_cnt);i++)
+            {
+                caltvalue+=arr[i];
+            }
+            //System.out.print("yskim processScanResult ok Minor 1 average : " + tvalue/advertisingPackets.size() + "\n");
+            //System.out.print("yskim processScanResult ok Minor 1 max  : " + arr[0]+ "    min  : " + arr[size-1]+ "\n");
+            revrssi = (int) (caltvalue/(arr.length-(remove_cnt*2)));
+            //System.out.print("yskim processScanResult ok Minor 1 rt average : " + revrssi + "\n");
+            //revdistance = (float) Math.pow(10, (-59 - revrssi ) / (10 * 1.4f));
+            revdistance = revcalculateDistance(-54,revrssi);
+            revmax = arr[0];
+            revmin = arr[(yskimadvertisingPackets.size()-1)];
+
+            //float filteredRssi = createSuggestedWindowFilter().filter(this);
+
+            //remove_actualdistance=BeaconDistanceCalculator.calculateDistanceTo(this, filteredRssi);
+        }
+        else
+        {
+            //비콘신호가 없어졌다...  9개가 되면 그럼
+            revrssi = 0;
+            revdistance = 0.0f;
+            revmax = 0;
+            revmin = 0;
+        }
+    }
+
+
+    public void yskimKanmal()
+    {
+        float filteredRssi = createSuggestedWindowFilter().filter(this);
+    }
+
+    float yskim_plus=-0.3f;
+    float yskim_minus=0.0f;
+    public  float revcalculateDistance(int txPower, double rssi) {
+        //return (float) Math.pow(10, (txPower - rssi ) / (10 * 1.4f));
+
+        if (rssi == 0) {
+            return -1.0f; // if we cannot determine distance, return -1.
+        }
+        double ratio = rssi*1.0/txPower;
+        if (ratio < 1.0) {
+            return (float)Math.abs(Math.pow(ratio,10)+yskim_plus);
+        }
+        else {
+            //-59 이하로 -40 이면 -
+            //float accuracy = (float) Math.abs(((0.89976)*Math.pow(ratio,7.7095) + 0.111)+yskim_minus);
+            float accuracy = (float) Math.abs(((1.1)*Math.pow(ratio,7.7095) + 0.111));
+            return accuracy;
+        }
+
+    }
+
+
     public void applyPropertiesFromAdvertisingPacket(P advertisingPacket) {
         //setTransmissionPower(lastAdvertisingPacket.get);
+
     }
 
     public void trimAdvertisingPackets() {
@@ -149,21 +302,34 @@ public abstract class Beacon<P extends AdvertisingPacket> {
             if (!hasAnyAdvertisingPacket()) {
                 return;
             }
+
             List<P> removableAdvertisingPackets = new ArrayList<>();
+            List<P> removyskimableAdvertisingPackets = new ArrayList<>();
             AdvertisingPacket latestAdvertisingPacket = getLatestAdvertisingPacket();
             long minimumPacketTimestamp = System.currentTimeMillis() - MAXIMUM_PACKET_AGE;
             for (P advertisingPacket : advertisingPackets) {
                 if (advertisingPacket == latestAdvertisingPacket) {
                     // don't remove the latest packet
+
                     continue;
                 }
+
                 if (advertisingPacket.getTimestamp() < minimumPacketTimestamp) {
                     // mark old packets as removable
                     removableAdvertisingPackets.add(advertisingPacket);
                 }
             }
 
+            //yskim yskimadvertisingPackets
+            for (P advertisingPacket : yskimadvertisingPackets) {
+                if (advertisingPacket.getTimestamp() < minimumPacketTimestamp) {
+                    // mark old packets as removable
+                    removyskimableAdvertisingPackets.add(advertisingPacket);
+                }
+            }
+
             advertisingPackets.removeAll(removableAdvertisingPackets);
+            yskimadvertisingPackets.removeAll(removyskimableAdvertisingPackets);
         }
     }
 
@@ -200,16 +366,21 @@ public abstract class Beacon<P extends AdvertisingPacket> {
     public float getDistance() {
         if (shouldUpdateDistance) {
             distance = getDistance(createSuggestedWindowFilter());
+            //yskim
             shouldUpdateDistance = false;
         }
         return distance;
     }
 
+
+
     public float getDistance(RssiFilter filter) {
         float filteredRssi = getRssi(filter);
+        System.out.print("yskim befor dist  Rssi : "+rssi+"   filteredRssi "+filteredRssi+"\n");
         // TODO get real device elevation with 3D multilateration
-        //return BeaconDistanceCalculator.calculateDistanceWithoutElevationDeltaToDevice(this, filteredRssi, 1);
-        return BeaconDistanceCalculator.calculateDistanceTo(this, filteredRssi);
+
+        //return BeaconDistanceCalculator.calculateDistanceTo(this, filteredRssi);
+        return BeaconDistanceCalculator.calculateDistanceTo(this, rssi);  //yskim no kalmalfilter
     }
 
     public float getEstimatedAdvertisingRange() {
@@ -224,7 +395,9 @@ public abstract class Beacon<P extends AdvertisingPacket> {
     }
 
     public WindowFilter createSuggestedWindowFilter() {
-        return new KalmanFilter(getLatestTimestamp());
+        WindowFilter wf=new KalmanFilter(getLatestTimestamp());  //yskim
+        //System.out.print(wf);
+        return wf;
     }
 
     /**
@@ -310,6 +483,12 @@ public abstract class Beacon<P extends AdvertisingPacket> {
     public void setTransmissionPower(int transmissionPower) {
         this.transmissionPower = transmissionPower;
     }
+
+
+    public ArrayList<P> getYskimadvertisingPackets() {
+        return yskimadvertisingPackets;
+    }
+
 
     public ArrayList<P> getAdvertisingPackets() {
         return advertisingPackets;

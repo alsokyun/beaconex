@@ -27,7 +27,7 @@ public class BeaconManager {
 
     private AdvertisingPacketFactoryManager advertisingPacketFactoryManager = new AdvertisingPacketFactoryManager();
 
-    private Map<String, Beacon> beaconMap = new LinkedHashMap<>();
+    public static Map<String, Beacon> beaconMap = new LinkedHashMap<>();
 
     private final Set<BeaconUpdateListener> beaconUpdateListeners = new HashSet<>();
 
@@ -35,8 +35,8 @@ public class BeaconManager {
 
     private Beacon closestBeacon;
 
-    //private static final WindowFilter meanFilter = new MeanFilter(15, TimeUnit.SECONDS);
-    private static final WindowFilter meanFilter = new MeanFilter(5, TimeUnit.SECONDS);  //yskim
+    private static final WindowFilter meanFilter = new MeanFilter(15, TimeUnit.SECONDS);
+    //private static final WindowFilter meanFilter = new MeanFilter(5, TimeUnit.SECONDS);  //yskim
 
     private BeaconManager() {
 
@@ -58,7 +58,7 @@ public class BeaconManager {
         if (advertisingPacket != null) {
             advertisingPacket.setRssi(rssi);
         }
-        System.out.print("1>>>>>>>6"+macAddress+"\n");
+        System.out.print("1>>>>>>>6 "+macAddress+"  rssi : "+rssi+"\n");
         return processAdvertisingPacket(macAddress, advertisingPacket);
     }
 
@@ -73,7 +73,7 @@ public class BeaconManager {
         BeaconManager instance = getInstance();
         String key = getBeaconKey(macAddress, advertisingPacket);
 
-        System.out.print("1>>>>>>>5"+key+"\n");
+        //System.out.print("1>>>>>>>5 "+key+"\n");
 
         Beacon beacon;
         if (instance.beaconMap.containsKey(key)) {
@@ -86,6 +86,8 @@ public class BeaconManager {
             }
             beacon.setMacAddress(macAddress);
 
+
+            System.out.print("2231111111 : "+ key+"    b : "+beacon+"\n");
             instance.beaconMap.put(key, beacon);
         }
         beacon.addAdvertisingPacket(advertisingPacket);
@@ -137,7 +139,13 @@ public class BeaconManager {
     }
 
     public static String getBeaconKey(String macAddress, AdvertisingPacket advertisingPacket) {
-        return macAddress + "-" + Arrays.hashCode(advertisingPacket.getData());
+
+        //String key=macAddress + "-" + Arrays.hashCode(advertisingPacket.getData());
+        String key=macAddress; //yskim only mac
+       //if(macAddress=="00:51:5B:00:15:CB")
+            System.out.print("221111111 : "+macAddress+"        key : " +key+"     data : "+advertisingPacket.getData()+"\n");
+
+        return key;
     }
 
     public static Beacon getBeacon(String macAddress, AdvertisingPacket advertisingPacket) {
@@ -161,7 +169,7 @@ public class BeaconManager {
 
             Map.Entry<String, Beacon> beaconEntry = beaconMapIterator.next();
             latestAdvertisingPacket = beaconEntry.getValue().getLatestAdvertisingPacket();
-            System.out.print("1>>>>>>>3"+beaconEntry.getKey()+"   "+latestAdvertisingPacket.getTimestamp()+"\n");
+            //System.out.print("1>>>>>>>3 "+beaconEntry.getKey()+"   "+latestAdvertisingPacket.getTimestamp()+"\n");
             if (latestAdvertisingPacket == null || latestAdvertisingPacket.getTimestamp() < minimumAdvertisingTimestamp) {
                 inactiveBeaconKeys.add(beaconEntry.getKey());
             }
