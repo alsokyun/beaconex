@@ -15,12 +15,6 @@ ol.proj.proj4.register(proj4);
 
 
 
-//이미지레이어범위
-//let projExtent = [14157005.425914, 4498212.914733]; //3857
-//let projExtent = [14157005.425914, 4498212.914733, 14157071.006190, 4498255.665878]; //3857
-// let projExtent = [2.22, 0.65, 127.175741, 37.423578]; //27700
-//let projExtent = [127.175111, 37.423295, 127.175741, 37.423578]; //4326
-let projExtent = [127.17467, 37.423025, 127.17493, 37.423105]; //4326
 
 
 
@@ -35,18 +29,69 @@ let map;
  * 레이어 선언부분
  */
 //로드 레이어
-let source1 = new ol.source.Vector();
-let vectorLayer;
+let streetSource = new ol.source.Vector();
+let streetLayer;
 
 //마커포지션 레이어
-let source2 = new ol.source.Vector();
-let vectorLayer2;
+let posiSource = new ol.source.Vector();
+let posiLayer;
 
-//삐뽀 레이어
-let source3 = new ol.source.Vector({
-    wrapX: false,
+//비콘삐뽀 레이어
+let source3 = new ol.source.Vector();
+//let vectorLayer3 = new ol.layer.Vector({
+//	source: source3,
+////	opacity: 0.5,
+//	style: new ol.style.Style({
+//        fill: new ol.style.Fill({
+//            color: 'rgba(255,255,255,0.2)'
+//        }),
+//        image: new ol.style.Circle({
+//            radius: 17,
+//            fill: new ol.style.Fill({
+//                color: "#3399ff",
+//            }),
+//            stroke: new ol.style.Stroke({
+//                color: '#0000ff',
+//                width: 1
+//            }),
+//        }),
+//    }),
+//});
+
+let vectorLayer3 = new ol.layer.Vector({
+	source: source3,
+	opacity: 0.5,
+	style: function (feature) {
+		var geometry = feature.getGeometry();
+		console.log("radius - " + feature.getProperties().radius);
+		return new ol.style.Style({
+			fill: new ol.style.Fill({
+				color: 'rgba(0,0,255,0.1)'
+			}),
+			image: new ol.style.Circle({
+				radius: 10,
+				fill: new ol.style.Fill({
+					color: "#3399ff",
+				}),
+			}),
+            stroke: new ol.style.Stroke({
+                color: '#0000ff',
+                width: 1
+            }),
+
+            text: new ol.style.Text({
+                font: '8px Verdana',
+                scale: 2,
+                text: feature.getProperties().radius === undefined ? "" :  feature.getProperties().radius + " m",
+                fill: new ol.style.Fill({ color: '#000' }),
+                //stroke: new ol.style.Stroke({ color: 'yellow', width: 3 })
+            }),
+        });
+
+	}
 });
-let vectorLayer3;
+
+
 
 //배경지도 타일맵 레이어
 let rasterLayer = new ol.layer.Tile({
@@ -54,9 +99,9 @@ let rasterLayer = new ol.layer.Tile({
 });
 
 //사무실이미지 레이어
-let source_img = new ol.source.ImageStatic({
+let imgSource = new ol.source.ImageStatic({
 	url:
-	  'dr_off.png',
+	  'dr_off_4.png',
 	crossOrigin: 'anonymous',
 	projection: rotateProjection("EPSG:4326", Math.PI / 180*(-4), projExtent),
 	imageExtent: projExtent,
@@ -64,10 +109,10 @@ let source_img = new ol.source.ImageStatic({
 });
 let imageLayer;
 
-//라인편집 레이어
-let drawVectorSource = new ol.source.Vector();
-let drawVectorLayer = new ol.layer.Vector({
-	source: drawVectorSource,
+//라인Path 레이어
+let linePathSource = new ol.source.Vector();
+let linePathLayer = new ol.layer.Vector({
+	source: linePathSource,
 	style: new ol.style.Style({
 		fill: new ol.style.Fill({
 			color: 'rgba(255,255,255,0.2)'
@@ -83,6 +128,29 @@ let drawVectorLayer = new ol.layer.Vector({
 			})
 		}),
 	}),
+});
+
+//라인마커 레이어
+let lineMarkerSource = new ol.source.Vector();
+let lineMarkerLayer = new ol.layer.Vector({
+	source: lineMarkerSource,
+	 style: function(feature){
+	 	let styles = [];
+
+	 	feature.getGeometry().forEachSegment(function(start, end){
+	 		styles.push(new ol.style.Style({
+	 			geometry: new ol.geom.LineString([start, end]),
+	 			fill: new ol.style.Fill({
+	 				color: 'rgba(0,255,0,0.5)'
+	 			}),
+	 			stroke: new ol.style.Stroke({
+	 				color: '#00ff00',
+	 				width: 10
+	 			}),
+	 		}));
+	 	});
+	 	return styles;
+	 },
 });
 
 
@@ -101,8 +169,7 @@ let parser = new ol.format.WMTSCapabilities();
 let GeoJSON = new ol.format.GeoJSON();
 
 //이전포지션
-let pre_vectorLayer2;
-var	pre_marker;
+let	pre_marker;
 
 //편집객체
 let draw;
@@ -124,7 +191,6 @@ let modify;
 //지도초기화
 let initMap = function(){
 
-
 	//브이월드 WMTS 타일맵
 	gfn_loadFile("WMTSCapabilities.xml", function(text){
 		let result = parser.read(text);
@@ -145,8 +211,8 @@ let initMap = function(){
  			],
 			target: document.getElementById('map'),
 			view: new ol.View({
-			center: ol.proj.fromLonLat([127.1748, 37.4230]), //디알씨티에스
-			zoom: 22,
+			center: ol.proj.fromLonLat([127.1748, 37.42305]), //디알씨티에스
+			zoom: 21,
 			}),
 		})
 
@@ -161,11 +227,6 @@ let initMap = function(){
 		//마커레이어
 		fn_layer_Pos();
 
-		//마커이동
-		let cnt = 0;
-		setInterval(function(){
-			move(cnt++);
-		}, 1000);
 
 
 		//이미지레이어
@@ -173,244 +234,73 @@ let initMap = function(){
 
 
 
-
-		// moveMaker([127.17487910037713,37.42310490165161]);
-        //		moveMaker([127.17487106339897,37.42309890571249	]);
-        //		moveMaker([127.17488319176584,37.4230935143468  ]);
-        //		moveMaker([127.17481258966491,37.42306528757972 ]);
-        //		moveMaker([127.1748108776806,37.423063707964474 ]);
-        //		moveMaker([127.17486723854375,37.42309845412717 ]);
-        //		moveMaker([127.17487542284822,37.42309697143114 ]);
-        //		moveMaker([127.17487553259048,37.423097089788634]);
-        //		moveMaker([127.17487375480032,37.423097952174125]);
-        //		moveMaker([127.1748646811337,37.42309552760887  ]);
-        //		moveMaker([127.17486219937012,37.423097824455766]);
-        //		moveMaker([127.17486386209274,37.42309944709116 ]);
-
-		// moveMaker([127.17474, 37.42303]); //좌하
-		// moveMaker([127.17473, 37.42309]); //좌상
-		// moveMaker([127.17492, 37.42311]); //우상
-		// moveMaker([127.17492, 37.42304]); //우하
+		// movec([127.17474, 37.42303]); //좌하
+		// moveMarker([127.17473, 37.42309]); //좌상
+		// moveMarker([127.17492, 37.42311]); //우상
+		// moveMarker([127.17492, 37.42304]); //우하
 	});
 
 
+
+
 }
 
 
-
-
-
-
-var	arr_points=[];
- let point_Clear = function(){
-
-for(var i=0, len=arr_points.length; i<len; i++){
-    //put your code here
-    source1.removeFeature(arr_points[i]);
-    }
-
-    while(arr_points.length > 0) {
-        arr_points.pop();
-    }
-    arr_points.length=0;
- }
-
 // 포인트 표시
- let pointMaker = function(cord){
-     console.log("pointMaker .. " + cord);
-
- 	// convert the generated point to a OpenLayers feature
- 	let marker = new ol.Feature({
- 		geometry: new ol.geom.Point(cord),
- 	  });
-
-
-/*
-user maker
-var iconBlue = new ol.style.Style({
-      image: new ol.style.Icon({
-       anchor: [0.5, 1],
-        opacity: 1,
-        src: './img/user_icon.png'
-
-      })
-    });
-    marker.setStyle(iconBlue);
-
- 	marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
-
- 	try{
- 	 	source1.removeFeature(pre_marker);
- 	}catch(e){}
-*/
-//point
-var myStyle = new ol.style.Style({
-      image: new ol.style.Circle({
-        radius: 3,
-        fill: new ol.style.Fill({ color: [255, 255, 200, 1]}),
-        stroke: new ol.style.Stroke({
-          color: [255,0,0], width: 1
-        })
-      })
-    })
-marker.setStyle(myStyle);
-
-marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
-    arr_points.push(marker);
-	source1.addFeature(marker);
-
- 	pre_marker = marker;
- 	//alert(1);ol.proj.METERS_PER_UNIT.m
-
- }
-
-
-
-var	circle_marker1;
-var	circle_marker2;
-var	circle_marker3;
-var	circle_marker4;
-var	circle_marker5;
-var	circle_marker6;
-
-// 포인트 표시
-let pointMaker2 = function(idx,cord,max,dist){
-    console.log("pointMaker2 .. " +idx +"    "+cord+"    "+max+"    "+dist+"\n");
- var view = map.getView();
-    var projection = view.getProjection();
-    var resolutionAtEquator = view.getResolution();
-    var center = view.getCenter();
-    var pointResolution = ol.proj.getPointResolution(projection, resolutionAtEquator, center);
-    var resolutionFactor = resolutionAtEquator/pointResolution;
-    //var radius = (radius / ol.proj.METERS_PER_UNIT.m) * resolutionFactor;
-    var radius = (dist / 130000) * resolutionFactor;
+let pointMarker = function(cord){
+    console.log("pointMarker .. " + cord);
+    if(gfn_isNull(cord))    return;
 
 	// convert the generated point to a OpenLayers feature
 	let marker = new ol.Feature({
-		//geometry: new ol.geom.Point(cord),
-		geometry: new ol.geom.Circle(cord,radius),
+		geometry: new ol.geom.Point(cord),
+	  });
+	//marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
 
-            });
-/*
-var iconBlue = new ol.style.Style({
-      image: new ol.style.Circle({
-               radius: 5,
-               fill: null,
-               stroke: new ol.style.Stroke({
-                   color: 'rgba(255,0,0,0.9)',
-                   width: 3
-               })
-      })
-    });
-    */
-
-        var stroke = new ol.style.Stroke({
-    	          color: 'rgba(255,0,0,0.9)',
-    	          width: 3
-    	    });
-
-    	    var style = new ol.style.Style({
-              stroke: stroke,
-              image: new ol.style.Circle({
-                radius: 100,
-                stroke: stroke,
-              }),
-               text: new ol.style.Text({
-                        text:idx.toString()+"  "+ dist.toString(),
-                      font: '18px Calibri,sans-serif',
-                      fill: new ol.style.Fill({ color: '#0f0' }),
-                      stroke: new ol.style.Stroke({
-                        color: '#f00', width: 2
-                      }),
-                      // get the text from the feature - `this` is ol.Feature
-                      // and show only under certain resolution
-                      //text: map.getView().getZoom() > 12 ? this.get('description') : ''
-                    })
-            });
-
-    marker.setStyle(style);
-
-/*
- var iconBlue = new ol.style.Style({
-      image: new ol.style.Icon({
-        anchor: [0.5, 1],
-        opacity: 1,
-        src: './img/beacon_icon.png'
-
-      })
-    });
-    marker.setStyle(iconBlue);
-*/
-
-try{
-       if(idx=="1"){
-            source1.removeFeature(circle_marker1);
-        }else if(idx=="2"){
-            source1.removeFeature(circle_marker2);
-        }else if(idx=="3"){
-            source1.removeFeature(circle_marker3);
-        }else if(idx=="4"){
-            source1.removeFeature(circle_marker4);
-        }
-        else if(idx=="5"){
-            source1.removeFeature(circle_marker5);
-        }
-        else if(idx=="6"){
-            source1.removeFeature(circle_marker6);
-        }
- 	}catch(e){}
-
-	marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
-
-	source1.addFeature(marker);
-
-    if(idx=="1"){
-        circle_marker1=marker;
-    }else if(idx=="2"){
-        circle_marker2=marker;
-    }else if(idx=="3"){
-        circle_marker3=marker;
-    }else if(idx=="4"){
-            circle_marker4=marker;
-    }else if(idx=="5"){
-        circle_marker5=marker;
-    }else if(idx=="6"){
-        circle_marker6=marker;
-    }
-
-	//pre_marker = marker;
-	//alert(1);
-
+	try{
+	 	posiSource.removeFeature(pre_marker);
+	}catch(e){}
+	try{
+        posiSource.addFeature(marker);
+        pre_marker = marker;
+	}catch(e){}
 }
 
-
-let circleMaker2 = function(cord,length){
-    console.log("pointMaker2 .. " + cord);
+// 포인트선분으로 표시
+let lineMarker = function(cord){
+    console.log("lineMarker .. " + cord);
+    if(gfn_isNull(cord))    return;
 
 	// convert the generated point to a OpenLayers feature
 	let marker = new ol.Feature({
-		//geometry: new ol.geom.Point(cord),
-		geometry: new ol.geom.Circle(cord,length),
+		geometry: new ol.geom.LineString([gfn_isNull(cur_xy)? cord : cur_xy, cord]),
+	  });
 
-            });
-/*
- var iconBlue = new ol.style.Style({
-      image: new ol.style.Icon({
-        anchor: [0.5, 1],
-        opacity: 1,
-        src: './img/beacon_icon.png'
-
-      })
-    });
-    marker.setStyle(iconBlue);
-*/
-	marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
-
-	source1.addFeature(marker);
-	//pre_marker = marker;
-	//alert(1);
+	try{
+        lineMarkerSource.addFeature(marker);
+	}catch(e){}
 
 }
+
+
+
+
+// 격자포인트 표시
+let pointLatis = function(cord){
+	// convert the generated point to a OpenLayers feature
+	let marker = new ol.Feature({
+		geometry: new ol.geom.Point(cord),
+	  });
+	//marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
+
+	streetSource.addFeature(marker);
+	try{
+        map.addLayer(streetLayer);
+	}catch(e){}
+}
+
+
+
 
 
 
@@ -422,45 +312,18 @@ let fn_layer_Load = function(){
 	gfn_loadFile("roads-seoul.geojson", function(text){
 		_json = JSON.parse(text);
 
-   var style = new ol.style.Style({
-                fill: new ol.style.Fill({
-                    color: 'rgba(255, 0, 0, 1)'
-                }),
-                stroke: new ol.style.Stroke({
-                    width: 2,
-                    color: 'rgba(255, 0, 0, 1)'
-                }),
-                image: new ol.style.Circle({
-                    fill: new ol.style.Fill({
-                        color: 'rgba(255, 0, 0, 1)'
-                    }),
-                    stroke: new ol.style.Stroke({
-                        width: 1,
-                        color: 'rgba(255, 0, 0, 1)'
-                    }),
-                    radius: 7
-                }),
-                 text: new ol.style.Text({
-                    text: 'FISH\nTEXT',
-                    scale: [0, 0],
-                    rotation: Math.PI / 4,
-                    textAlign: 'center',
-                    textBaseline: 'top',
-                  }),
-            });
-
-		vectorLayer = new ol.layer.Vector({
-		  source: source1,
-         style: style
+		streetLayer = new ol.layer.Vector({
+		  source: streetSource,
 		});
 
 		let features = GeoJSON.readFeatures(_json);
 		let street = features[0];
 
 		street.getGeometry().transform('EPSG:4326', 'EPSG:3857');
-		source1.addFeature(street);
-	
-		map.addLayer(vectorLayer);
+		streetSource.addFeature(street);
+
+        streetLayer.setZIndex(3);
+		map.addLayer(streetLayer);
 
 	});
 
@@ -472,17 +335,33 @@ let fn_layer_Load = function(){
 
 let fn_layer_Pos = function(){
 	//포지션레이어
-	vectorLayer2 = new ol.layer.Vector({
-	  source: source2,
+	posiLayer = new ol.layer.Vector({
+	  source: posiSource,
+       style: new ol.style.Style({
+         fill: new ol.style.Fill({
+             color: '#ff33cc'
+         }),
+         stroke: new ol.style.Stroke({
+             color: '#66ff66',
+             width: 3
+         }),
+         image: new ol.style.Circle({
+             radius: 7,
+             fill: new ol.style.Fill({
+                 color: "#ff0000",
+             })
+         }),
+	    }),
 	});
 
-    map.addLayer(vectorLayer2);
+    posiLayer.setZIndex(4);
+    map.addLayer(posiLayer);
 }
 
 let fn_layer_Img = function(){
 	//이미지레이어
 	imageLayer = new ol.layer.Image({		
-	  source: source_img,
+	  source: imgSource,
 	  opacity: 0.5,
 	  rotation: 3.14,
 	});
@@ -496,7 +375,6 @@ let fn_layer_Bcn = function(){
 	vectorLayer3 = new ol.layer.Vector({
 	  source: source3,
 	});
-
     map.addLayer(vectorLayer3);
 
     source3.on('addfeature', function (e) {
@@ -519,7 +397,21 @@ $(document).ready(function() {
 	//지도초기화
 	initMap();
 
+	//격자불러오기
+	gfn_loadFile("dr_path_4.geojson", function(text){
+		let drawVector_Ary = JSON.parse(text);;
 
+		latisAry = [];
+		$.each(drawVector_Ary, function(idx, val){
+			let ft = GeoJSON.readFeatures(val);
+			$.each(ft[0].getGeometry().getCoordinates(), function(idx, val){
+				latisAry.push(val);
+			});
+		});
+	});
+
+    //지도회전
+    rot_Ang(90);
 	
 	
 	/**
@@ -530,11 +422,10 @@ $(document).ready(function() {
 
 	//라인편집해제
 	$("#btn3").click(function(){
-		map.removeInteraction(draw);
-		map.removeInteraction(snap);
-		
+
 		try{
-			map.removeLayer(drawVectorLayer);
+			map.removeLayer(streetLayer);
+			map.removeLayer(linePathLayer);
 		}catch(e){}
 	});
 
@@ -543,17 +434,36 @@ $(document).ready(function() {
 
 	//저장된 Path 로딩
 	$("#btn4").click(function(){
-		debugger;
-		let drawVector_string = localStorage.getItem("drawVector_string");
-		let drawVector_Ary = JSON.parse(drawVector_string);
 
-		$.each(drawVector_Ary, function(idx, val){
-			drawVectorSource.addFeatures(GeoJSON.readFeatures(val));
-		});
+        gfn_loadFile("dr_path_4.geojson", function(text){
+            let drawVector_Ary = JSON.parse(text);;
 
-		try{
-			map.addLayer(drawVectorLayer);
-		}catch(e){}
+            //라인스트링 표시
+            $.each(drawVector_Ary, function(idx, val){
+                let ft = GeoJSON.readFeatures(val);
+                //ft[0].getGeometry().transform('EPSG:4326','EPSG:3857');//좌표계로 변환
+                linePathSource.addFeatures(ft);
+            });
+
+            try{
+                linePathLayer.setZIndex(2);
+                map.addLayer(linePathLayer);
+            }catch(e){}
+
+            //resolved 포인트확인
+            $.each(drawVector_Ary, function(idx, val){
+                let ft = GeoJSON.readFeatures(val);
+                $.each(ft[0].getGeometry().getCoordinates(), function(idx, val){
+                    pointLatis(val);
+                });
+            });
+
+            try{
+                lineMarkerLayer.setZIndex(2);
+                map.addLayer(lineMarkerLayer);
+            }catch(e){}
+        });
+
 	});
 
 
@@ -566,11 +476,6 @@ $(document).ready(function() {
 	$("#btn2").click(function(){
 		rot_Ang(30);
 	});
-
-
-	$("#btn5").click(function(){
-    		point_Clear();
-    	});
 
 
 });

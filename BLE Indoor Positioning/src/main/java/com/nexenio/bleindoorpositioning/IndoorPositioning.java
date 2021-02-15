@@ -32,9 +32,11 @@ public class IndoorPositioning implements LocationProvider, BeaconUpdateListener
     public static final long UPDATE_INTERVAL_SLOW = 3000;
 
     public static final int ROOT_MEAN_SQUARE_THRESHOLD_STRICT = 5;
+
     //public static final int ROOT_MEAN_SQUARE_THRESHOLD_MEDIUM = 10;
     public static final int ROOT_MEAN_SQUARE_THRESHOLD_LIGHT = 35;  //yskim
     //public static final int ROOT_MEAN_SQUARE_THRESHOLD_LIGHT = 25;
+
 
 
     private static final int MINIMUM_BEACON_COUNT = 3; // multilateration requires at least 3 beacons
