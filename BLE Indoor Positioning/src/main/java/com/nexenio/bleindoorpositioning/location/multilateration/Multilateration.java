@@ -52,9 +52,20 @@ public class Multilateration {
         return distances;
     }
 
+
+    public static double[] getRevDistances(List<Beacon> beacons) {
+        double[] distances = new double[beacons.size()];
+        for (int beaconIndex = 0; beaconIndex < beacons.size(); beaconIndex++) {
+            distances[beaconIndex] = beacons.get(beaconIndex).getRevdistance();
+        }
+        return distances;
+    }
+
+
     public LeastSquaresOptimizer.Optimum findOptimum() {
         double[][] positions = getPositions(beacons);
-        double[] distances = getDistances(beacons);
+        //double[] distances = getDistances(beacons);
+        double[] distances =getRevDistances(beacons);  //yskim rev 로 변경하여 가져온다.
         return findOptimum(positions, distances);
     }
 
